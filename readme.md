@@ -7,7 +7,7 @@ to offer a new style API leveraging `lambda`and [Parent-Chaining Pattern](https:
 
 Using Vincer-Dom, Dom manipulation code should look like :
 
-```
+```Java
 public void editMavenPom() {
         InputStream is = EditRunner.class.getResourceAsStream("sample-pom.xml");
         VDocument doc = VDocument.parse(is);
