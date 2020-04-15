@@ -1,4 +1,4 @@
-# Vincer-Dom : Modern DOM manipulation  <img src="syringe.svg"/>
+# Vincer-Dom <img src="syringe.svg"/> Modern DOM manipulation  
 
 Vincer-Dom aims at fixing DOM manipulation in Java which suffers from old style cumbersome API.
 
