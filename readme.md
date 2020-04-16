@@ -49,7 +49,7 @@ public class EditTest {
 }
 ```
 
-If we want to achieve the same using [JDom2](http://www.jdom.org/) (not even talking about w3c API), the best we can do is :
+If we want to achieve the same using *JDom* (not even talking about w3c API or *Dom4J*), the best we can do is :
 
 ```Java
 public class JdomEditTest {
