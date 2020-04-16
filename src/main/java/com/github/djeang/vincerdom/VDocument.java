@@ -32,7 +32,7 @@ public class VDocument {
     }
 
     /**
-     * Creates a document having a root element of the the specified name.
+     * Creates a document with a root element of the specified name.
      */
     public static VDocument of(String rootName) {
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
@@ -48,17 +48,33 @@ public class VDocument {
         return new VDocument(doc);
     }
 
-    public static VDocument parse(InputStream inputStream) {
+    /**
+     * Creates a {@link VDocument} by parsing the content of specified input stream.
+     * The stream content is parsed with the specified documentBuilder.
+     */
+    public static VDocument parse(InputStream inputStream, DocumentBuilder documentBuilder) {
         Document doc;
         try {
-            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            doc = builder.parse(inputStream);
-        } catch (ParserConfigurationException | SAXException e) {
+            doc = documentBuilder.parse(inputStream);
+        } catch (SAXException e) {
             throw new RuntimeException(e);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
         return new VDocument(doc);
+    }
+
+    /**
+     * Same as {@link #parse(InputStream, DocumentBuilder)} but using a default {@link DocumentBuilder}.
+     */
+    public static VDocument parse(InputStream inputStream) {
+        final DocumentBuilder builder;
+        try {
+            builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+        } catch (ParserConfigurationException e) {
+            throw new RuntimeException(e);
+        }
+        return parse(inputStream, builder);
     }
 
     /**
@@ -68,16 +84,25 @@ public class VDocument {
         return w3cDocument;
     }
 
-
+    /**
+     * Returns the root element of this document.
+     */
     public VElement<VDocument> root() {
         Element root = w3cDocument.getDocumentElement();
         return VElement.of(this, root);
     }
 
+    /**
+     * Outputs xml in the specified stream.
+     */
     public void print(OutputStream out) {
         print(out, configurer -> {});
     }
 
+    /**
+     * Same as {@link #print(OutputStream)} but caller can modify the default XML transformer using the
+     * specified {@link Consumer<Transformer>}.
+     */
     public void print(OutputStream out, Consumer<Transformer> transformerConfigurer) {
         TransformerFactory tf = TransformerFactory.newInstance();
         final Transformer transformer;

@@ -36,7 +36,14 @@ public class JdomEditTest {
                     .addContent(new Element("group").setText("com.github.djeang"))
                     .addContent(new Element("artifactId").setText("vincer-dom"))
                     .addContent(new Element("version").setText("0.1-SNAPSHOT"))
-        );
+                );
+        dependencies.addContent
+                (new Element("dependency")
+                    .addContent(new Element("group").setText("org.junit.jupiter"))
+                    .addContent(new Element("artifactId").setText("unit-jupiter-engine"))
+                    .addContent(new Element("version").setText("5.4.0"))
+                    .addContent(new Element("scope").setText("test"))
+                );
         removeTests(dependencies);
         Element distributionManagement = getOrCreate(root, "distributionManagement");
         Element repository = getOrCreate(distributionManagement, "repository");
