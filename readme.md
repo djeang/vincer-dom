@@ -1,11 +1,11 @@
 [![Build Status](https://travis-ci.org/djeang/vincer-dom.svg?branch=master)](https://travis-ci.org/djeang/vincer-dom)
 
-# Vincer-Dom : Cure Dom Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="syringe.svg"/> 
+# Vincer-Dom : A Cure for Dom Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="syringe.svg"/> 
 
 Vincer-Dom aims at curing DOM manipulation in Java using  [Parent-Chaining Pattern](https://github.com/djeang/parent-chaining/blob/master/readme.md).
 
-Vincer-Dom simply wraps `org.w3c.dom.Document` and `org.w3c.dom.Element` from JDK API to offer 
-a fresh new style API. Thanks to *Parent-Chaining* pattern the API is very thin as it consists in only 
+Vincer-Dom simply wraps `org.w3c.dom.Document` and `org.w3c.dom.Element` from JDK to offer 
+a fresh new style API. Thanks to *Parent-Chaining* pattern, the API is very thin as it consists in only 
 2 classes : `VDocument` and `VElement`, each one wrapping its `org.w3c.dom` counterpart. 
 
 To give a concrete idea, the following code does :
@@ -19,8 +19,8 @@ public class EditTest {
     
     @Test
     public void editMavenPom() {
-        InputStream is = EditTest.class.getResourceAsStream("sample-pom.xml");
-        VDocument doc = VDocument.parse(is)
+        InputStream stream = EditTest.class.getResourceAsStream("sample-pom.xml");
+        VDocument doc = VDocument.parse(stream)
             .root()
                 .get("dependencies")
                     .add("dependency")
@@ -49,18 +49,18 @@ public class EditTest {
 }
 ```
 
-If we want to achieve the same using [JDom2](http://www.jdom.org/) (not even talking about w3c API), the best we can do is :
+If we want to achieve the same using *JDom* (not even talking about w3c API or *Dom4J*), the best we can do is :
 
 ```Java
 public class JdomEditTest {
 
     @Test
     public void editMavenPomWithJdom() {
-        InputStream is = JdomEditTest.class.getResourceAsStream("sample-pom.xml");
+        InputStream stream = JdomEditTest.class.getResourceAsStream("sample-pom.xml");
         final Document document;
         try {
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            org.w3c.dom.Document w3cDocument = builder.parse(is);
+            org.w3c.dom.Document w3cDocument = builder.parse(stream);
             document = new DOMBuilder().build(w3cDocument);
         }
         catch (Exception e) {
