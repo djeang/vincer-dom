@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/jerkar/jeka.svg?branch=master)](https://travis-ci.org/djeang/vincer-dom)
+[![Build Status](https://travis-ci.org/djeang/vincer-dom.svg?branch=master)](https://travis-ci.org/djeang/vincer-dom)
 
 # Vincer-Dom : Fix Dom Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="syringe.svg"/> 
 
