@@ -19,8 +19,8 @@ public class EditTest {
     
     @Test
     public void editMavenPom() {
-        InputStream is = EditTest.class.getResourceAsStream("sample-pom.xml");
-        VDocument doc = VDocument.parse(is)
+        InputStream stream = EditTest.class.getResourceAsStream("sample-pom.xml");
+        VDocument doc = VDocument.parse(stream)
             .root()
                 .get("dependencies")
                     .add("dependency")
@@ -56,11 +56,11 @@ public class JdomEditTest {
 
     @Test
     public void editMavenPomWithJdom() {
-        InputStream is = JdomEditTest.class.getResourceAsStream("sample-pom.xml");
+        InputStream stream = JdomEditTest.class.getResourceAsStream("sample-pom.xml");
         final Document document;
         try {
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            org.w3c.dom.Document w3cDocument = builder.parse(is);
+            org.w3c.dom.Document w3cDocument = builder.parse(stream);
             document = new DOMBuilder().build(w3cDocument);
         }
         catch (Exception e) {
