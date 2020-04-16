@@ -12,7 +12,7 @@ To give a concrete idea, the following code does :
 * Read a pom.xml file (an XML file from Maven that most of Java developers know)
 * Add 2 dependencies
 * Remove all dependencies having `test` scope
-* Modify distribution repository, creating potential missing elements through method `make()`. 
+* Modify distribution repository, creating potential missing elements 
 
 ```Java
 public class EditTest {
@@ -35,7 +35,7 @@ public class EditTest {
                     .apply(this::removeTests).__
                 .get("distributionManagement")     // The distributionManagement tag may be absent
                     .get("repository")      
-                        .get("id").make().text("My repo id").__
+                        .get("id").make().text("My repo id").__.  // If id tag is abstent, make() will create it
                         .get("name").make().text("My repo name").__
                         .get("url").make().text("http://myserver::8081").__.__.__.__;
         doc.print(System.out);
