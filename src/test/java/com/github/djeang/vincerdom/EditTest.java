@@ -9,7 +9,7 @@ public class EditTest {
     @Test
     public void editMavenPom() {
         InputStream is = EditTest.class.getResourceAsStream("sample-pom.xml");
-        VDocument doc = VDocument.parse(is)
+        VDocument.parse(is)
             .root()
                 .get("dependencies")
                     .add("dependency")
@@ -26,8 +26,8 @@ public class EditTest {
                     .get("repository")
                         .get("id").make().text("My repo id").__
                         .get("name").make().text("My repo name").__
-                        .get("url").make().text("http://myserver::8081").__.__.__.__;
-        doc.print(System.out);
+                        .get("url").make().text("http://myserver::8081").__.__.__.__
+            .print(System.out);
     }
 
     private void removeTests(VElement<?> dependencies) {
