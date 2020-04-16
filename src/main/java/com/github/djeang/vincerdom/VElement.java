@@ -13,6 +13,8 @@ import java.util.function.Consumer;
  * The underlying element may exist or not. If the underlying element does not exist,
  * a proxy element is used in place but write methods are disabled. The concrete w3c element
  * can be created afterward using the {@link #make()} method.
+ *
+ * @author Jerome Angibaud
  */
 public class VElement<P> {
 

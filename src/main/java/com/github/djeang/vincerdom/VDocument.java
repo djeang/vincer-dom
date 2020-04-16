@@ -15,6 +15,8 @@ import java.util.function.Consumer;
 
 /**
  * Wrapper for {@link org.w3c.dom.Document} offering a Parent-Chaining fluent interface.
+ *
+ * @author Jerome Angibaud
  */
 public class VDocument {
 
