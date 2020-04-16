@@ -1,8 +1,8 @@
 [![Build Status](https://travis-ci.org/djeang/vincer-dom.svg?branch=master)](https://travis-ci.org/djeang/vincer-dom)
 
-# Vincer-Dom : Fix Dom Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="syringe.svg"/> 
+# Vincer-Dom : Cure Dom Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="syringe.svg"/> 
 
-Vincer-Dom aims at fixing DOM manipulation in Java using  [Parent-Chaining Pattern](https://github.com/djeang/parent-chaining/blob/master/readme.md).
+Vincer-Dom aims at curing DOM manipulation in Java using  [Parent-Chaining Pattern](https://github.com/djeang/parent-chaining/blob/master/readme.md).
 
 Vincer-Dom simply wraps `org.w3c.dom.Document` and `org.w3c.dom.Element` from JDK API to offer 
 a fresh new style API. Thanks to Parent-Chaining pattern the API is very thin as it consists in only 
@@ -49,7 +49,7 @@ public class EditTest {
 }
 ```
 
-If we want to achieve the same using [JDom2](http://www.jdom.org/), the best we can do is :
+If we want to achieve the same using [JDom2](http://www.jdom.org/) (not even talking about w3c API), the best we can do is :
 
 ```Java
 public class JdomEditTest {
