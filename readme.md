@@ -3,13 +3,14 @@
 Vincer-Dom aims at fixing DOM manipulation in Java using  [Parent-Chaining Pattern](https://github.com/djeang/parent-chaining/blob/master/readme.md).
 
 Vincer-Dom simply wraps `org.w3c.dom.Document` and `org.w3c.dom.Element` from JDK API to offer 
-a fresh style API.
+a fresh new style API. Thanks to Parent-Chaining pattern the API is very this as it consists in only 
+2 classes : `VDocument` and `VElement`, each one wrapping its `org.w3c.dom` counterpart. 
 
 To give a concrete idea, the following code does :
-* read a pom.xml file
+* read a pom.xml file (A Maven file that most of Java developer knows)
 * add 2 dependencies
 * remove all dependencies having `test` scope
-* modify distribution repository. Potentially missing elements are created through method `make()`. 
+* modify distribution repository. Potential missing elements are created through method `make()`. 
 
 ```Java
 public class EditTest {
@@ -110,6 +111,10 @@ public class JdomEditTest {
         }
     }
 }
-
 ```
+As you can see, Vincer-Dom saves a lot of coding effort while getting code much more readable.
+
+Enjoy !
+
+
 > Icon made by https://www.stockio.com/free-icon/medical-icons-syringe
