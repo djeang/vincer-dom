@@ -1,11 +1,11 @@
 # Vincer-Dom <img src="syringe.svg"/> Modern DOM manipulation  
 
-Vincer-Dom aims at fixing DOM manipulation in Java which suffers from old style cumbersome API.
+Vincer-Dom aims at fixing DOM manipulation in Java using  [Parent-Chaining Pattern](https://github.com/djeang/parent-chaining/blob/master/readme.md) pattern.
 
 Vincer-Dom simply wraps `org.w3c.dom.Element` and `org.w3c.dom.Element` API from JDK to offer 
-to offer a new style API leveraging `lambda`and [Parent-Chaining Pattern](https://github.com/djeang/parent-chaining/blob/master/readme.md)
+to offer a fresh style API.
 
-Using Vincer-Dom, Dom manipulation code should look like :
+To give a concrete idea, the following code reads a pom.xml file, adds a dependecy, removes all dependencies having `test` scope and modifies distribution repository url.
 
 ```Java
 public void editMavenPom() {
