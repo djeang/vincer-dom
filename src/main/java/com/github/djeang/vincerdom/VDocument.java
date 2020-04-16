@@ -13,6 +13,9 @@ import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.util.function.Consumer;
 
+/**
+ * Wrapper for {@link org.w3c.dom.Document} offering a Parent-Chaining fluent interface.
+ */
 public class VDocument {
 
     private final Document w3cDocument;
@@ -21,10 +24,16 @@ public class VDocument {
         this.w3cDocument = w3cDocument;
     }
 
-    public Document getW3cDocument() {
-        return w3cDocument;
+    /**
+     * Creates a {@link VDocument} wrapping the specified w3c document.
+     */
+    public static VDocument of(Document w3cDocument) {
+        return new VDocument(w3cDocument);
     }
 
+    /**
+     * Creates a document having a root element of the the specified name.
+     */
     public static VDocument of(String rootName) {
         DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         final DocumentBuilder builder;
@@ -40,10 +49,9 @@ public class VDocument {
     }
 
     public static VDocument parse(InputStream inputStream) {
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
         Document doc;
         try {
-            DocumentBuilder builder = dbf.newDocumentBuilder();
+            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
             doc = builder.parse(inputStream);
         } catch (ParserConfigurationException | SAXException e) {
             throw new RuntimeException(e);
@@ -53,9 +61,17 @@ public class VDocument {
         return new VDocument(doc);
     }
 
+    /**
+     * Returns thd underlying w3c {@link Document}.
+     */
+    public Document getW3cDocument() {
+        return w3cDocument;
+    }
+
+
     public VElement<VDocument> root() {
         Element root = w3cDocument.getDocumentElement();
-        return new VElement<>(this, root);
+        return VElement.of(this, root);
     }
 
     public void print(OutputStream out) {

@@ -4,11 +4,11 @@ import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
 
-public class EditRunner {
+public class EditTest {
 
     @Test
     public void editMavenPom() {
-        InputStream is = EditRunner.class.getResourceAsStream("sample-pom.xml");
+        InputStream is = EditTest.class.getResourceAsStream("sample-pom.xml");
         VDocument doc = VDocument.parse(is);
         doc.root()
             .get("dependencies")
@@ -19,7 +19,9 @@ public class EditRunner {
                 .apply(this::removeTests).__
             .get("distributionManagement")
                 .get("repository")
-                    .get("url").text("http://myserver::8081");
+                    .get("id").make().text("My repo id").__
+                    .get("name").make().text("My repo name").__
+                    .get("url").make().text("http://myserver::8081");
         doc.print(System.out);
     }
 

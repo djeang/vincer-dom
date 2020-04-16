@@ -8,44 +8,84 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class VElement<P> extends VNode<P> {
+/**
+ * Wrapper for {@link org.w3c.dom.Element} offering a Parent-Chaining fluent interface. <p>
+ * The underlying element may exist or not. If the underlying element does not exist,
+ * a proxy element is used in place but write methods are disabled. The concrete w3c element
+ * can be created afterward using the {@link #make()} method.
+ */
+public class VElement<P> {
+
+    public final P __;
 
     private Element w3cElement;
 
     private ElementProxy proxyElement;  // only used for non-existing element, so we can create it afterward.
 
-    protected VElement(P __, Element element) {
-        super(__);
+    private VElement(P parent, Element element) {
+        this.__ = parent;
         this.w3cElement = element;
     }
 
     private VElement(P __, VElement parent, String name) {
-        super(__);
+        this.__ = __;
         this.proxyElement = ElementProxy.of(parent, name);
     }
 
+    /**
+     * Creates a VElement wrapping the specified element.
+     */
+    public static VElement<Void> of(Element element) {
+        return new VElement(null, element);
+    }
+
+    /**
+     * Creates a VElement wrapping the specified parent and element.
+     */
+    public static <P> VElement of(P parent, Element element) {
+        return new VElement(parent, element);
+    }
+
+    /**
+     * Returns the underlying w3cElement. This element can be null if this VElement does not exist.
+     */
     public Element getW3cElement() {
         return w3cElement;
     }
 
+    /**
+     * Adds the specified attribute name/value on the underlying element.
+     * @throws IllegalStateException if the underlying element does not exist.
+     */
     public VElement<P> attr(String name, String value) {
         assertExist();
         w3cElement.setAttribute(name, value);
         return this;
     }
 
+    /**
+     * Removes the specified attribute of the specified name from the underlying element.
+     * @throws IllegalStateException if the underlying element does not exist.
+     */
     public VElement<P> removeAttr(String name) {
         assertExist();
         w3cElement.removeAttribute(name);
         return this;
     }
 
+    /**
+     * Sets the specified text on the underlying element.
+     * @throws IllegalStateException if the underlying element does not exist.
+     */
     public VElement<P> text(String text) {
         assertExist();
         w3cElement.setTextContent(text);;
         return this;
     }
 
+    /**
+     * Returns the text pof the underlying element. <code>null</code> if the underlying element does not exist.
+     */
     public String getText() {
         if (!exist()) {
             return null;
@@ -53,6 +93,11 @@ public class VElement<P> extends VNode<P> {
         return w3cElement.getTextContent();
     }
 
+    /**
+     * Adds a child element of the specified name on the underlying element. This methods returns the
+     * newly created element.
+     * @throws IllegalStateException if the underlying element does not exist.
+     */
     public VElement<VElement<P>> add(String name) {
         assertExist();
         Element newElement = w3cElement.getOwnerDocument().createElement(name);
@@ -60,6 +105,10 @@ public class VElement<P> extends VNode<P> {
         return new VElement<>(this, newElement);
     }
 
+    /**
+     * Returns the first child element of the underlying element having the specified name. <p>
+     * If no such element exist, this method returns a proxy element that let creation possible afterward.
+     */
     public VElement<VElement<P>> get(String name) {
         if (!exist()) {
             return ElementProxy.of(this, name).create();
@@ -71,6 +120,10 @@ public class VElement<P> extends VNode<P> {
         return new VElement<>(this, this, name);
     }
 
+    /**
+     * Returns an unmodifiable list of the child elements. Returns an empty list if the underlying element
+     * does not exist.
+     */
     public List<VElement<VElement<P>>> getAll(String name) {
         if (!exist()) {
             return Collections.emptyList();
@@ -85,34 +138,46 @@ public class VElement<P> extends VNode<P> {
     }
 
     /**
-     * Adds a sibling element of the specified name just before this one.
-     *
-     * @return The newly created sibling.
+     * Adds a sibling element of the specified name just before this one. This method returns the newly
+     * created element.
      */
     public VElement<P> addSibling(String name) {
         assertExist();
         Element newElement = w3cElement.getOwnerDocument().createElement(name);
         w3cElement.getParentNode().insertBefore(newElement, w3cElement);
-        return new VElement<>(this.__, newElement);
+        return VElement.of(this.__, newElement);
     }
 
+    /**
+     * Removes the underlying element from its parent children.
+     */
     public VElement<P> remove() {
         assertExist();
         this.w3cElement.getParentNode().removeChild(w3cElement);
-        return null;
+        return this;
     }
 
+    /**
+     * Runs the specified consumer with this element as argument.
+     */
     public VElement<P> apply(Consumer<VElement<?>> consumer) {
         assertExist();
         consumer.accept(this);
         return this;
     }
 
+    /**
+     * Returns <code>true</code> if the underlying element exist.
+     */
     public boolean exist() {
         return w3cElement != null;
     }
 
-    public VElement<P> createIfNotExist() {
+    /**
+     * Creates the underlying element and its non-existing parents.
+     * Does nothing if the underlying element already exists.
+     */
+    public VElement<P> make() {
         if (!exist()) {
             this.w3cElement = proxyElement.create().w3cElement;
             this.proxyElement = null;
@@ -122,9 +187,24 @@ public class VElement<P> extends VNode<P> {
 
     private void assertExist() {
         if (w3cElement == null) {
-            throw new IllegalStateException("Element does not exist. " +
-                    "Please, invoke #createIfNotExist() prior trying to modify it.");
+            throw new IllegalStateException("Element " + this + " does not exist. " +
+                    "Please, invoke #make() prior trying to modify it.");
         }
+    }
+
+    private String getName() {
+        if (exist()) {
+            return w3cElement.getNodeName();
+        }
+        return proxyElement.name;
+    }
+
+    @Override
+    public String toString() {
+        if (this.__ == null || !(this.__ instanceof VElement))  {
+            return getName();
+        }
+        return this.__ + "/" + getName();
     }
 
     private static class ElementProxy {
@@ -143,9 +223,10 @@ public class VElement<P> extends VNode<P> {
         }
 
         VElement create() {
-            parent.createIfNotExist();
+            parent.make();
             return parent.add(name);
         }
+
     }
 
 

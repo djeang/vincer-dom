@@ -1,5 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.github.djeang</groupId>
@@ -139,11 +138,6 @@
     </dependencies>
 
     <distributionManagement>
-        <repository>
-            <id>My_Artifactory_Releases</id>
-            <name>My_Artifactory-releases</name>
-            <url>http://my.maven.repository.internal/artifactory/release</url>
-        </repository>
 
         <snapshotRepository>
             <id>My_Artifactory_Snapshots</id>

@@ -31,3 +31,4 @@ To give a concrete idea, the following code reads a pom.xml file, adds a depende
     }
 ```
 
+> Icon made by https://www.stockio.com/free-icon/medical-icons-syringe

@@ -2,7 +2,7 @@ package com.github.djeang.vincerdom;
 
 import org.junit.jupiter.api.Test;
 
-public class WriteRunner {
+public class WriteTest {
 
     @Test
     public void createFromScratch() {
