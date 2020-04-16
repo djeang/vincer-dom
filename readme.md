@@ -7,7 +7,7 @@ a fresh new style API. Thanks to Parent-Chaining pattern the API is very thin as
 2 classes : `VDocument` and `VElement`, each one wrapping its `org.w3c.dom` counterpart. 
 
 To give a concrete idea, the following code does :
-* read a pom.xml file (A Maven file that most of Java developer knows)
+* read a pom.xml file (a Maven file that most of Java developer knows)
 * add 2 dependencies
 * remove all dependencies having `test` scope
 * modify distribution repository. Potential missing elements are created through method `make()`. 
@@ -113,6 +113,12 @@ public class JdomEditTest {
 }
 ```
 As you can see, Vincer-Dom saves a lot of coding effort while getting code much more readable.
+
+## Roadmap
+* Migrate build to Jeka 0.9
+* Publish to Maven central
+* Add namespace support
+* Add XPath support
 
 Enjoy !
 
