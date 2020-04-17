@@ -2,7 +2,7 @@
 
 # Vincer-Dom : A Cure for Dom Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="syringe.svg"/> 
 
-Vincer-Dom aims at curing DOM manipulation in Java using  [Parent-Chaining Pattern](https://github.com/djeang/parent-chaining/blob/master/readme.md).
+Vincer-Dom aims at easing DOM manipulation in Java using  [Parent-Chaining Pattern](https://github.com/djeang/parent-chaining/blob/master/readme.md).
 
 Vincer-Dom simply wraps `org.w3c.dom.Document` and `org.w3c.dom.Element` from JDK to offer 
 a fresh new style API. With the use of *Parent-Chaining* pattern, the API is very thin as it consists of only 
