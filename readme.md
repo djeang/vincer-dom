@@ -8,7 +8,7 @@ Vincer-Dom simply wraps `org.w3c.dom.Document` and `org.w3c.dom.Element` from JD
 a fresh new style API. With the use of *Parent-Chaining* pattern, the API is very thin as it consists of only 
 2 classes : `VDocument` and `VElement`, each one wrapping its `org.w3c.dom` counterpart. 
 
-To give a concrete idea, the following code :
+To give a concrete idea, the following code:
 
 * Reads a pom.xml file (an XML file from Maven that most of Java developers know)
 * Adds 2 dependencies
@@ -36,7 +36,7 @@ public class EditTest {
                     .apply(this::removeTests).__
                 .get("distributionManagement")     // The distributionManagement tag may be absent
                     .get("repository")      
-                        .get("id").make().text("My repo id").__    // make() creates absent tags
+                        .get("id").make().text("My repo id").__    // make() creates absent element and its ancestors
                         .get("name").make().text("My repo name").__
                         .get("url").make().text("http://myserver::8081").__.__.__.__;
         doc.print(System.out);
@@ -50,7 +50,7 @@ public class EditTest {
 }
 ```
 
-If we want to achieve the same using *JDom* (not even talking about w3c API or *Dom4J*), the best we can do is :
+If we want to achieve exaxtly the same using *JDom* (not even talking about w3c API or *Dom4J*), the best we can do is:
 
 ```Java
 public class JdomEditTest {
