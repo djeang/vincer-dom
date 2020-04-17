@@ -36,7 +36,7 @@ public class EditTest {
                     .apply(this::removeTests).__
                 .get("distributionManagement")     // The distributionManagement tag may be absent
                     .get("repository")      
-                        .get("id").make().text("My repo id").__
+                        .get("id").make().text("My repo id").__.  // If id tag is abstent, make() will create it
                         .get("name").make().text("My repo name").__
                         .get("url").make().text("http://myserver::8081").__.__.__.__;
         doc.print(System.out);
