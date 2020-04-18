@@ -34,7 +34,7 @@ public class EditTest {
                         .add("version").text("5.4.0").__
                         .add("scope").text("test").__.__
                     .apply(this::removeTests).__
-                .get("distributionManagement")     // The distributionManagement tag may be absent
+                .get("distributionManagement")     // The distributionManagement tag may be ptresent or not
                     .get("repository")      
                         .get("id").make().text("My repo id").__    // make() creates absent element and its ancestors
                         .get("name").make().text("My repo name").__
@@ -124,8 +124,5 @@ Enjoy !
 * Publish to Maven central
 * Add namespace support
 * Add XPath support
-
-
-
 
 > Icon made by https://www.stockio.com/free-icon/medical-icons-syringe
