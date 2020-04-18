@@ -117,13 +117,15 @@ public class JdomEditTest {
 ```
 As you can see, Vincer-Dom saves a lot of coding effort while getting code much more readable.
 
+Enjoy !
+
 ## Roadmap
 * Migrate build to Jeka 0.9
 * Publish to Maven central
 * Add namespace support
 * Add XPath support
 
-Enjoy !
+
 
 
 > Icon made by https://www.stockio.com/free-icon/medical-icons-syringe
