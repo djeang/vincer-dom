@@ -46,7 +46,7 @@ public class EditTest {
     private void removeTests(VElement<?> dependencies) {
         dependencies.getAll("dependency").stream()
             .filter(dependency -> "test".equals(dependency.get("scope").getText()))
-            .forEach(dep -> dep.remove());
+            .forEach(VElement::remove);
     }
 }
 ```
@@ -124,14 +124,31 @@ W3C Dom level API is still available through methods `VDocument#getW3cDocument` 
 * Add namespace support
 * Add XPath support
 
+## Import in Your Project
+
+Maven: 
+```
+<dependency>
+    <groupId>com.github.djeang</groupId>
+    <artifactId>vincer-dom</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+
+Jeka:
+```Java
+.add("com.github.djeang:vincer-dom:1.0.0")
+```
+
+
 ## How to build
 
 Vincer-dom is build with [Jeka](https://jeka.dev).
 
-* Execute `jekaw cleanPack`. This will compile, test and package the library in jar file. You don't need to install Jeka 
+* Execute `./jekaw cleanPack`. This will compile, test and package the library in jar file. You don't need to install Jeka 
   on your machine.
   
-* To release, just execute `jekaw git#tagRemote` and choose a version name for the release.
+* To release, just execute `./jekaw git#tagRemote` and choose a version name for the release.
   Release mechanism will be automatically handled by *Travis*.
 
 Enjoy !

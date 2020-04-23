@@ -33,6 +33,6 @@ public class EditTest {
     private void removeTests(VElement<?> dependencies) {
         dependencies.getAll("dependency").stream()
             .filter(dependency -> "test".equals(dependency.get("scope").getText()))
-            .forEach(dep -> dep.remove());
+            .forEach(VElement::remove);
     }
 }
