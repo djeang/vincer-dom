@@ -50,8 +50,10 @@ public class EditTest {
     }
 }
 ```
+The complete Dom fulfilling has been done in a single chained statement, allowing concision and 
+very good readability.
 
-If we want to achieve exaxtly the same using *JDom* (not even talking about w3c API or *Dom4J*), the best we can do is:
+If we want to achieve exactly the same using *JDom* (not even talking about w3c API or *Dom4J*), the best we can do is:
 
 ```Java
 public class JdomEditTest {
