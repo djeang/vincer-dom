@@ -2,13 +2,13 @@
 
 # Vincer-Dom : A Cure for Dom Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="syringe.svg"/> 
 
-Vincer-Dom aims at curing DOM manipulation in Java using  [Parent-Chaining Pattern](https://github.com/djeang/parent-chaining/blob/master/readme.md).
+Vincer-Dom aims at easing DOM manipulation in Java using  [Parent-Chaining Pattern](https://github.com/djeang/parent-chaining/blob/master/readme.md).
 
 Vincer-Dom simply wraps `org.w3c.dom.Document` and `org.w3c.dom.Element` from JDK to offer 
 a fresh new style API. With the use of *Parent-Chaining* pattern, the API is very thin as it consists of only 
 2 classes : `VDocument` and `VElement`, each one wrapping its `org.w3c.dom` counterpart. 
 
-To give a concrete idea, the following code :
+To give a concrete idea, the following code:
 
 * Reads a pom.xml file (an XML file from Maven that most of Java developers know)
 * Adds 2 dependencies
@@ -34,9 +34,9 @@ public class EditTest {
                         .add("version").text("5.4.0").__
                         .add("scope").text("test").__.__
                     .apply(this::removeTests).__
-                .get("distributionManagement")     // The distributionManagement tag may be absent
+                .get("distributionManagement")     // The distributionManagement tag may be ptresent or not
                     .get("repository")      
-                        .get("id").make().text("My repo id").__    // make() creates absent tags
+                        .get("id").make().text("My repo id").__    // make() creates absent element and its ancestors
                         .get("name").make().text("My repo name").__
                         .get("url").make().text("http://myserver::8081").__.__.__.__;
         doc.print(System.out);
@@ -50,7 +50,7 @@ public class EditTest {
 }
 ```
 
-If we want to achieve the same using *JDom* (not even talking about w3c API or *Dom4J*), the best we can do is :
+If we want to achieve exaxtly the same using *JDom* (not even talking about w3c API or *Dom4J*), the best we can do is:
 
 ```Java
 public class JdomEditTest {
@@ -117,22 +117,12 @@ public class JdomEditTest {
 ```
 As you can see, Vincer-Dom saves a lot of coding effort while getting code much more readable.
 
-W3C Dom level API is still available through methods `VDocument#getW3cDocument` and `VElement#getW3cElement`.
+Enjoy !
 
 ## Roadmap
 * Migrate build to Jeka 0.9
 * Publish to Maven central
 * Add namespace support
 * Add XPath support
-
-## How to build
-
-Vincer-dom is build with [Jeka](https://jeka.dev).
-
-* Execute `jekaw cleanPack`. This will compile, test and package the library in jar file. You don't need to install Jeka 
-  on your machine.
-
-Enjoy !
-
 
 > Icon made by https://www.stockio.com/free-icon/medical-icons-syringe
