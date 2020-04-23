@@ -120,10 +120,6 @@ As you can see, Vincer-Dom saves a lot of coding effort while getting code much 
 
 W3C Dom level API is still available through methods `VDocument#getW3cDocument` and `VElement#getW3cElement`.
 
-## Roadmap
-* Add namespace support
-* Add XPath support
-
 ## Adding Vincer-Dom to your build
 
 Maven: 
@@ -140,7 +136,6 @@ Jeka:
 .add("com.github.djeang:vincer-dom:1.0.0")
 ```
 
-
 ## How to build
 
 Vincer-dom is build with [Jeka](https://jeka.dev).
@@ -150,6 +145,10 @@ Vincer-dom is build with [Jeka](https://jeka.dev).
   
 * To release, just execute `./jekaw git#tagRemote` and choose a version name for the release.
   Release mechanism will be automatically handled by *Travis*.
+  
+## Roadmap
+* Add namespace support
+* Add XPath support
 
 Enjoy !
 
