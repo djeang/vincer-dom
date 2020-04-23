@@ -38,7 +38,7 @@ class Build extends JkCommandSet {
                         .setDescription("Modern Dom manipulation library for Java")
                         .setUrl("https://github.com/djeang/vincer-dom").__
                     .getScm()
-                        .setConnection("https://github.com/djeang/vincer-dom.git").__
+                        .setUrl("https://github.com/djeang/vincer-dom.git").__
                     .addApache2License()
                     .addGithubDeveloper("djeang", "djeangdev@yahoo.fr");
     }
