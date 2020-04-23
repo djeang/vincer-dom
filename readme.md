@@ -117,11 +117,20 @@ public class JdomEditTest {
 ```
 As you can see, Vincer-Dom saves a lot of coding effort while getting code much more readable.
 
+W3C Dom level API is still available through methods `VDocument#getW3cDocument` and `VElement#getW3cElement`.
+
 ## Roadmap
 * Migrate build to Jeka 0.9
 * Publish to Maven central
 * Add namespace support
 * Add XPath support
+
+## How to build
+
+Vincer-dom is build with [Jeka](https://jeka.dev).
+
+* Execute `jekaw cleanPack`. This will compile, test and package the library in jar file. You don't need to install Jeka 
+  on your machine.
 
 Enjoy !
 
