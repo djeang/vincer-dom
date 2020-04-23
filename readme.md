@@ -124,7 +124,7 @@ W3C Dom level API is still available through methods `VDocument#getW3cDocument` 
 * Add namespace support
 * Add XPath support
 
-## Import in Your Project
+## Adding Vincer-Dom to your build
 
 Maven: 
 ```
