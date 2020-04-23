@@ -121,8 +121,6 @@ As you can see, Vincer-Dom saves a lot of coding effort while getting code much 
 W3C Dom level API is still available through methods `VDocument#getW3cDocument` and `VElement#getW3cElement`.
 
 ## Roadmap
-* Migrate build to Jeka 0.9
-* Publish to Maven central
 * Add namespace support
 * Add XPath support
 
