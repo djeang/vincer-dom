@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/djeang/vincer-dom.svg?branch=master)](https://travis-ci.org/djeang/vincer-dom)
+[![Maven Central](https://img.shields.io/maven-central/v/com.github.djeang/vincer-dom.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.github.djeang%22%20AND%20a:%22vincer-dom%22) 
 
 # Vincer-Dom : A Cure for Dom Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="syringe.svg"/> 
 
@@ -117,12 +118,25 @@ public class JdomEditTest {
 ```
 As you can see, Vincer-Dom saves a lot of coding effort while getting code much more readable.
 
-Enjoy !
+W3C Dom level API is still available through methods `VDocument#getW3cDocument` and `VElement#getW3cElement`.
 
 ## Roadmap
 * Migrate build to Jeka 0.9
 * Publish to Maven central
 * Add namespace support
 * Add XPath support
+
+## How to build
+
+Vincer-dom is build with [Jeka](https://jeka.dev).
+
+* Execute `jekaw cleanPack`. This will compile, test and package the library in jar file. You don't need to install Jeka 
+  on your machine.
+  
+* To release, just execute `jekaw git#tagRemote` and choose a version name for the release.
+  Release mechanism will be automatically handled by *Travis*.
+
+Enjoy !
+
 
 > Icon made by https://www.stockio.com/free-icon/medical-icons-syringe

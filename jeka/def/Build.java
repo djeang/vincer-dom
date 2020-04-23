@@ -5,6 +5,7 @@ import dev.jeka.core.tool.JkCommandSet;
 import dev.jeka.core.tool.JkEnv;
 import dev.jeka.core.tool.JkInit;
 import dev.jeka.core.tool.builtins.java.JkPluginJava;
+import dev.jeka.core.tool.builtins.repos.JkPluginPgp;
 
 import static dev.jeka.core.api.depmanagement.JkScope.TEST;
 
@@ -21,6 +22,7 @@ class Build extends JkCommandSet {
 
     @Override
     protected void setup() {
+        getPlugin(JkPluginPgp.class);  // supply automatically a signer with the secret key located in jeka/gpg
         java.getProject()
             .getDependencyManagement()
                 .addDependencies(JkDependencySet.of()
