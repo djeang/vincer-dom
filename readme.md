@@ -4,13 +4,11 @@
 # Vincer-Dom : A Cure for Dom/XML Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="media/syringe.svg"/> 
 
 Writing or editing Dom/XML in Java has never been natural or straightforward. 
-The Java code structure diverges inexorably from the underlying tree structure it manipulates, 
-leading to overly bloated code.
+The Java code structure diverges inexorably from the underlying tree structure it manipulates, obscuring the original intentions.
 
 Vincer-Dom fixes this issue by using  [Parent-Chaining Pattern](https://github.com/djeang/parent-chaining/blob/master/readme.md).
 
-Vincer-Dom simply wraps `org.w3c.dom.Document` and `org.w3c.dom.Element` from JDK to offer 
-a powerful fresh new style API. 
+Vincer-Dom simply wraps `org.w3c.dom.Document` and `org.w3c.dom.Element` from JDK to offer a powerful fresh new style API. 
 
 To give a concrete idea, the following code:
 
@@ -53,8 +51,8 @@ public class EditTest {
     }
 }
 ```
-The complete Dom manipulation has been expressed in a single chained statement, allowing code to reflect 
-the tree structure nature of the manipulated data.
+The complete Dom manipulation has been expressed in a single chained statement, reflecting the tree structure 
+of the manipulated data.
 
 If we want to achieve exactly the same using *JDom* (a library embracing *method chaining* though), the best we can do is:
 
@@ -128,6 +126,8 @@ With the use of *Parent-Chaining* pattern, the API is very thin as it consists o
 
 W3C Dom level API is still available through methods `VDocument#getW3cDocument` and `VElement#getW3cElement`.
 
+Tips: With IntelliJ you can adjust indentation right and left using `tab` and `shift+tab`.
+
 ## Adding Vincer-Dom to your build
 
 Maven: 
@@ -148,10 +148,10 @@ Jeka:
 
 Vincer-dom is build with [Jeka](https://jeka.dev).
 
-If you don't use [Intellij Plugin for Jeka](https://plugins.jetbrains.com/plugin/13489-jeka), do the 
-following to set up your IDE after fetching this project:
-* Eclipse: `./jekaw eclipse#files`
-* IntelliJ: `./jekaw intellij#iml` 
+If you don't use [Intellij Plugin for Jeka](https://plugins.jetbrains.com/plugin/13489-jeka), right after fetching this
+project, execute:
+* For Eclipse: `./jekaw eclipse#files`
+* For IntelliJ: `./jekaw intellij#iml` 
 
 *Note that you don't need to install Jeka on your machine.*
 
@@ -167,7 +167,7 @@ Releasing just consists in putting a Git tag. If a tag is present on the current
 signs and pushes artifacts to OSSRH public release repo. Artifacts are simply pushed to OSSRH 
 Snapshot repo otherwise.
 
-You can directly put a tag on the remote branch with `./jekaw git#tagRemote`. This will list the existing tags 
+You can directly put a tag on the remote branch with `./jekaw git#tagRemote`. This will list the existing tags,
 so you can choose the next one accordingly.
   
 ## Roadmap
