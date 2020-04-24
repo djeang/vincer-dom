@@ -1,13 +1,16 @@
 [![Build Status](https://travis-ci.org/djeang/vincer-dom.svg?branch=master)](https://travis-ci.org/djeang/vincer-dom)
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.djeang/vincer-dom.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.github.djeang%22%20AND%20a:%22vincer-dom%22) 
 
-# Vincer-Dom : A Cure for Dom Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="media/syringe.svg"/> 
+# Vincer-Dom : A Cure for Dom/XML Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="media/syringe.svg"/> 
 
-Vincer-Dom aims at easing DOM manipulation in Java using  [Parent-Chaining Pattern](https://github.com/djeang/parent-chaining/blob/master/readme.md).
+Writing or editing Dom/XML in Java has never been straightforward or natural. 
+The Dom/XML manipulation code structure diverges inexorably from the underlying tree structure it manipulates, 
+leading to overly complex code to write or understand.
+
+Vincer-Dom fixes this issue by using  [Parent-Chaining Pattern](https://github.com/djeang/parent-chaining/blob/master/readme.md).
 
 Vincer-Dom simply wraps `org.w3c.dom.Document` and `org.w3c.dom.Element` from JDK to offer 
-a fresh new style API. With the use of *Parent-Chaining* pattern, the API is very thin as it consists of only 
-2 classes : `VDocument` and `VElement`, each one wrapping its `org.w3c.dom` counterpart. 
+a powerful fresh new style API. 
 
 To give a concrete idea, the following code:
 
@@ -50,10 +53,10 @@ public class EditTest {
     }
 }
 ```
-The complete Dom manipulation has been expressed in a single chained statement, allowing concision and 
-very good readability.
+The complete Dom manipulation has been expressed in a single chained statement, allowing code to reflect 
+the tree structure nature of the manipulated data.
 
-If we want to achieve exactly the same using *JDom* (not even talking about w3c API or *Dom4J*), the best we can do is:
+If we want to achieve exactly the same using *JDom* (a library embracing *method chaining* though), the best we can do is:
 
 ```Java
 public class JdomEditTest {
@@ -119,6 +122,9 @@ public class JdomEditTest {
 }
 ```
 As you can see, Vincer-Dom saves a lot of coding effort while getting code much more readable.
+
+With the use of *Parent-Chaining* pattern, the API is very thin as it consists of only 
+2 classes : `VDocument` and `VElement`, each one wrapping its `org.w3c.dom` counterpart. 
 
 W3C Dom level API is still available through methods `VDocument#getW3cDocument` and `VElement#getW3cElement`.
 
