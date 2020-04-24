@@ -4,7 +4,7 @@
 # Vincer-Dom : A Cure for Dom/XML Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="media/syringe.svg"/> 
 
 Writing or editing Dom/XML in Java has never been natural or straightforward. 
-The Dom/XML manipulation code structure diverges inexorably from the underlying tree structure it manipulates, 
+The Java code structure diverges inexorably from the underlying tree structure it manipulates, 
 leading to overly bloated code.
 
 Vincer-Dom fixes this issue by using  [Parent-Chaining Pattern](https://github.com/djeang/parent-chaining/blob/master/readme.md).
