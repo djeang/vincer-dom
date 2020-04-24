@@ -1,5 +1,6 @@
 import dev.jeka.core.api.depmanagement.JkDependencySet;
 import dev.jeka.core.api.depmanagement.JkRepoSet;
+import dev.jeka.core.api.java.JkJavaVersion;
 import dev.jeka.core.api.tooling.JkGitWrapper;
 import dev.jeka.core.tool.JkCommandSet;
 import dev.jeka.core.tool.JkEnv;
@@ -26,8 +27,11 @@ class Build extends JkCommandSet {
         java.getProject()
             .getDependencyManagement()
                 .addDependencies(JkDependencySet.of()
-                    .and("org.jdom:jdom2:jar:2.0.6", TEST)
-                    .and("org.junit.jupiter:junit-jupiter:5.6.2", TEST)).__
+                        .and("org.jdom:jdom2:jar:2.0.6", TEST)
+                        .and("org.junit.jupiter:junit-jupiter:5.6.2", TEST)).__
+            .getProduction()
+                .getCompilation()
+                    .setJavaVersion(JkJavaVersion.V8).__.__
             .getPublication()
                 .setModuleId("com.github.djeang:vincer-dom")
                 .setVersionSupplier(JkGitWrapper.of(getBaseDir())::getJkVersionFromTags)
