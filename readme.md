@@ -3,9 +3,9 @@
 
 # Vincer-Dom : A Cure for Dom/XML Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="media/syringe.svg"/> 
 
-Writing or editing Dom/XML in Java has never been straightforward or natural. 
+Writing or editing Dom/XML in Java has never been natural or straightforward. 
 The Dom/XML manipulation code structure diverges inexorably from the underlying tree structure it manipulates, 
-leading to overly complex code to write or understand.
+leading to overly bloated code.
 
 Vincer-Dom fixes this issue by using  [Parent-Chaining Pattern](https://github.com/djeang/parent-chaining/blob/master/readme.md).
 
@@ -38,7 +38,7 @@ public class EditTest {
                         .add("version").text("5.4.0").__
                         .add("scope").text("test").__.__
                     .apply(this::removeTests).__
-                .get("distributionManagement")     // The distributionManagement tag may be ptresent or not
+                .get("distributionManagement")     // The distributionManagement tag may be present or not
                     .get("repository")      
                         .get("id").make().text("My repo id").__    // make() creates absent element and its ancestors
                         .get("name").make().text("My repo name").__
@@ -148,11 +148,25 @@ Jeka:
 
 Vincer-dom is build with [Jeka](https://jeka.dev).
 
-* Execute `./jekaw cleanPack`. This will compile, test and package the library in jar file. You don't need to install Jeka 
-  on your machine.
-  
-* To release, just execute `./jekaw git#tagRemote` and choose a version name for the release.
-  Release mechanism will be automatically handled by *Travis*.
+If you don't use [Intellij Plugin for Jeka](https://plugins.jetbrains.com/plugin/13489-jeka), do the 
+following to set up your IDE after fetching this project:
+* Eclipse: `./jekaw eclipse#files`
+* IntelliJ: `./jekaw intellij#iml` 
+
+*Note that you don't need to install Jeka on your machine.*
+
+To build locally:
+
+`./jekaw cleanPack` will compile, test and package the library in jar file.
+
+## How to release
+
+Releasing just consists in putting a Git tag. If a tag is present on the current commit, the build 
+signs and pushes artifacts to OSSRH public release repo. Artifacts are simply pushed on OSSRH 
+Snapshot repo otherwise.
+
+You can directly put a tag on the remote branch with `./jekaw git#tagRemote`. This will list the existing tags 
+so you can choose the next one accordingly.
   
 ## Roadmap
 * Add namespace support
