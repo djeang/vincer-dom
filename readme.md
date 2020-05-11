@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/djeang/vincer-dom.svg?branch=master)](https://travis-ci.org/djeang/vincer-dom)
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.djeang/vincer-dom.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.github.djeang%22%20AND%20a:%22vincer-dom%22) 
 
-# Vincer-Dom : A Cure for Dom/XML Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="media/syringe.svg"/> 
+# Vincer-Dom : A Cure for DOM/XML Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="media/syringe.svg"/> 
 
 Writing or editing Dom/XML in Java has never been natural or straightforward. 
 The Java code structure diverges inexorably from the underlying tree structure it manipulates, obscuring the original intentions.
