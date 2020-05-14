@@ -122,7 +122,7 @@ public class JdomEditTest {
 As you can see, Vincer-Dom saves a lot of coding effort while getting code much more readable.
 
 With the use of *Parent-Chaining* pattern, the API is very thin as it consists of only 
-2 classes : `VDocument` and `VElement`, each one wrapping its `org.w3c.dom` counterpart. 
+2 classes : `VDocument` and `VElement`, each one wrapping its `org.w3c.dom` counterpart. The example does not show, but you can of course edit attributes in a fluent way.
 
 W3C Dom level API is still available through methods `VDocument#getW3cDocument` and `VElement#getW3cElement`.
 
