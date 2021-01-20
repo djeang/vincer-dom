@@ -1,6 +1,5 @@
 package com.github.djeang.vincerdom;
 
-import com.sun.org.apache.xml.internal.security.utils.ElementProxy;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
