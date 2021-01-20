@@ -25,26 +25,28 @@ class Build extends JkCommandSet {
     protected void setup() {
         getPlugin(JkPluginPgp.class);  // supply automatically a signer with the secret key located in jeka/gpg
         java.getProject()
-            .getDependencyManagement()
-                .addDependencies(JkDependencySet.of()
-                        .and("org.jdom:jdom2:jar:2.0.6", TEST)
-                        .and("org.junit.jupiter:junit-jupiter:5.6.2", TEST)).__
-            .getProduction()
-                .getCompilation()
-                    .setJavaVersion(JkJavaVersion.V8).__.__
-            .getPublication()
-                .setModuleId("com.github.djeang:vincer-dom")
-                .setVersionSupplier(JkGitWrapper.of(getBaseDir())::getJkVersionFromTags)
-                .setRepos(JkRepoSet.ofOssrhSnapshotAndRelease(ossrhUser, ossrhPwd))
-                .getPublishedPomMetadata()
-                    .getProjectInfo()
-                        .setName("Vincer-Dom")
-                        .setDescription("Modern Dom manipulation library for Java")
-                        .setUrl("https://github.com/djeang/vincer-dom").__
-                    .getScm()
-                        .setUrl("https://github.com/djeang/vincer-dom.git").__
-                    .addApache2License()
-                    .addGithubDeveloper("djeang", "djeangdev@yahoo.fr");
+                .getJarProduction()
+                    .getDependencyManagement()
+                        .addDependencies(JkDependencySet.of()
+                                .and("org.jdom:jdom2:jar:2.0.6", TEST)
+                                .and("org.junit.jupiter:junit-jupiter:5.6.2", TEST)).__
+
+                    .getCompilation()
+                        .setJavaVersion(JkJavaVersion.V8).__.__
+                .getPublication()
+                    .setModuleId("com.github.djeang:vincer-dom")
+                    .setVersionSupplier(JkGitWrapper.of(getBaseDir())::getJkVersionFromTags)
+                    .setRepos(JkRepoSet.ofOssrhSnapshotAndRelease(ossrhUser, ossrhPwd))
+                    .getMavenPublication()
+                        .getPomMetadata()
+                            .getProjectInfo()
+                                .setName("Vincer-Dom")
+                                .setDescription("Modern Dom manipulation library for Java")
+                                .setUrl("https://github.com/djeang/vincer-dom").__
+                            .getScm()
+                                .setUrl("https://github.com/djeang/vincer-dom.git").__
+                            .addApache2License()
+                            .addGithubDeveloper("djeang", "djeangdev@yahoo.fr");
     }
 
     public void cleanPack() {

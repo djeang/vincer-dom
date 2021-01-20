@@ -1,5 +1,6 @@
 package com.github.djeang.vincerdom;
 
+import com.sun.org.apache.xml.internal.security.utils.ElementProxy;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -123,10 +124,10 @@ public class VElement<P> {
     }
 
     /**
-     * Returns an unmodifiable list of the child elements. Returns an empty list if the underlying element
-     * does not exist.
+     * Returns an unmodifiable list of the child elements having the specified name.
+     * Returns an empty list if the underlying element does not exist.
      */
-    public List<VElement<VElement<P>>> getAll(String name) {
+    public List<VElement> children(String name) {
         if (!exist()) {
             return Collections.emptyList();
         }
@@ -137,6 +138,22 @@ public class VElement<P> {
             result.add(el);
         }
         return Collections.unmodifiableList(result);
+    }
+
+    /**
+     * Returns the child first child of this element having the specified name. Returns <code>null</null>
+     * if the underlying element does not exist or no such named child exists.
+     */
+    public VElement child(String name) {
+        if (!exist()) {
+            return null;
+        }
+        List<VElement<VElement<P>>> result = new LinkedList<>();
+        NodeList nodeList = w3cElement.getElementsByTagName(name);
+        if (nodeList.getLength() == 0) {
+            return null;
+        }
+        return new VElement(this, (Element) nodeList.item(0));
     }
 
     /**

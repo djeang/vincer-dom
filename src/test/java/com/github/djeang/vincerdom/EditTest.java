@@ -3,6 +3,10 @@ package com.github.djeang.vincerdom;
 import org.junit.jupiter.api.Test;
 
 import java.io.InputStream;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
 
 public class EditTest {
 
@@ -30,8 +34,18 @@ public class EditTest {
             .print(System.out);
     }
 
+    @Test
+    public void children() {
+        InputStream is = EditTest.class.getResourceAsStream("sample-pom.xml");
+        VDocument doc = VDocument.parse(is);
+        List<VElement> dependencyEls = doc.root().get("dependencies").children("dependency");
+        assertTrue(dependencyEls.size() > 3);
+        VElement secondArtifactEl = dependencyEls.get(1).child("artifactId");
+        assertEquals("hibernate-core", secondArtifactEl.getText());
+    }
+
     private void removeTests(VElement<?> dependencies) {
-        dependencies.getAll("dependency").stream()
+        dependencies.children("dependency").stream()
             .filter(dependency -> "test".equals(dependency.get("scope").getText()))
             .forEach(VElement::remove);
     }
