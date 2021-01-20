@@ -1,6 +1,10 @@
 [![Build Status](https://travis-ci.org/djeang/vincer-dom.svg?branch=master)](https://travis-ci.org/djeang/vincer-dom)
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.djeang/vincer-dom.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.github.djeang%22%20AND%20a:%22vincer-dom%22) 
 
+# Last features (1.2.0)
+* `VElement#child` and `VElement#children` methods to retrieve direct children
+* `VElement#xPath` to retrieve elements based on xPath expressions.
+
 # Vincer-Dom : A Cure for DOM/XML Manipulation &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;<img src="media/syringe.svg"/> 
 
 Writing or editing Dom/XML in Java has never been natural or straightforward. 
@@ -172,7 +176,6 @@ so you can choose the next one accordingly.
   
 ## Roadmap
 * Add namespace support
-* Add XPath support
 
 Enjoy !
 

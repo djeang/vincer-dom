@@ -2,6 +2,10 @@ package com.github.djeang.vincerdom;
 
 import org.junit.jupiter.api.Test;
 
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
 import java.io.InputStream;
 import java.util.List;
 
@@ -11,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class EditTest {
 
     @Test
-    public void editMavenPom() {
+    void editMavenPom() {
         InputStream is = EditTest.class.getResourceAsStream("sample-pom.xml");
         VDocument.parse(is)
             .root()
@@ -35,7 +39,7 @@ public class EditTest {
     }
 
     @Test
-    public void children() {
+    void children() {
         InputStream is = EditTest.class.getResourceAsStream("sample-pom.xml");
         VDocument doc = VDocument.parse(is);
         List<VElement> dependencyEls = doc.root().get("dependencies").children("dependency");
@@ -43,6 +47,18 @@ public class EditTest {
         VElement secondArtifactEl = dependencyEls.get(1).child("artifactId");
         assertEquals("hibernate-core", secondArtifactEl.getText());
     }
+
+    @Test
+    void xPath() {
+        InputStream is = EditTest.class.getResourceAsStream("sample-pom.xml");
+        VDocument doc = VDocument.parse(is);
+        XPathExpression xPathExpression = VXPath.compile("dependency/artifactId");
+        List<VElement> dependencyEls = doc.root().get("dependencies").xPath(xPathExpression);
+        assertTrue(dependencyEls.size() > 3);
+        assertEquals("hibernate-core", dependencyEls.get(1).getText());
+    }
+
+
 
     private void removeTests(VElement<?> dependencies) {
         dependencies.children("dependency").stream()

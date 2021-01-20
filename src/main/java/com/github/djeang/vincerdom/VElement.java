@@ -3,6 +3,7 @@ package com.github.djeang.vincerdom;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import javax.xml.xpath.*;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -154,6 +155,34 @@ public class VElement<P> {
         }
         return new VElement(this, (Element) nodeList.item(0));
     }
+
+    /**
+     * Returns an unmodifiable list of elements matching the specified xPath expression.
+     */
+    public List<VElement> xPath(XPathExpression xPathExpression) {
+        List<VElement<VElement<P>>> result = new LinkedList<>();
+        final NodeList nodeList;
+        try {
+            nodeList = (NodeList) xPathExpression.evaluate(w3cElement, XPathConstants.NODESET);
+        } catch (XPathExpressionException e) {
+            throw new IllegalStateException("Error when evaluating xPath expression " + xPathExpression, e);
+        }
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            VElement el = new VElement(this, (Element) nodeList.item(i));
+            result.add(el);
+        }
+        return Collections.unmodifiableList(result);
+    }
+
+    /**
+     * Returns an unmodifiable list of elements matching the specified xPath expression.
+     */
+    public List<VElement> xpath(String xPathExpression) {
+        XPathExpression compiledExpression = VXPath.compile(xPathExpression);
+        return xPath(compiledExpression);
+    }
+
+
 
     /**
      * Adds a sibling element of the specified name just before this one. This method returns the newly
