@@ -2,15 +2,12 @@ package com.github.djeang.vincerdom;
 
 import org.jdom2.Document;
 import org.jdom2.Element;
-import org.jdom2.Namespace;
 import org.jdom2.input.DOMBuilder;
 import org.jdom2.output.XMLOutputter;
 import org.junit.jupiter.api.Test;
-import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ListIterator;

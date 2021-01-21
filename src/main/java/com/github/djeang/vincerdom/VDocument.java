@@ -11,6 +11,7 @@ import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 /**
@@ -123,11 +124,9 @@ public class VDocument {
         transformerConfigurer.accept(transformer);
         try {
             transformer.transform(new DOMSource(w3cDocument),
-                    new StreamResult(new OutputStreamWriter(out, "UTF-8")));
+                    new StreamResult(new OutputStreamWriter(out, StandardCharsets.UTF_8)));
         } catch (TransformerException e) {
             throw new RuntimeException(e);
-        } catch (UnsupportedEncodingException e) {
-            throw new UncheckedIOException(e);
         }
     }
 

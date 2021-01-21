@@ -90,7 +90,7 @@ public class VElement<P> {
      */
     public VElement<P> text(String text) {
         assertExist();
-        w3cElement.setTextContent(text);;
+        w3cElement.setTextContent(text);
         return this;
     }
 
