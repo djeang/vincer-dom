@@ -67,6 +67,14 @@ public class VElement<P> {
     }
 
     /**
+     * Returns the value of the specified attribute on this element. Returns <code>null</code> if no such
+     * attribute exists.
+     */
+    public String attr(String name) {
+        return w3cElement.getAttribute(name);
+    }
+
+    /**
      * Removes the specified attribute of the specified name from the underlying element.
      * @throws IllegalStateException if the underlying element does not exist.
      */
