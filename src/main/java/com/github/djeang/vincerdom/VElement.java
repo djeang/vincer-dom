@@ -177,7 +177,7 @@ public class VElement<P> {
     /**
      * Returns an unmodifiable list of elements matching the specified xPath expression.
      */
-    public List<VElement> xpath(String xPathExpression) {
+    public List<VElement> xPath(String xPathExpression) {
         XPathExpression compiledExpression = VXPath.compile(xPathExpression);
         return xPath(compiledExpression);
     }
