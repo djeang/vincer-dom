@@ -19,7 +19,7 @@ import java.util.function.Consumer;
  *
  * @author Jerome Angibaud
  */
-public class VDocument {
+public final class VDocument {
 
     private final Document w3cDocument;
 

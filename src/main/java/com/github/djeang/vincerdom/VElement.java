@@ -17,7 +17,7 @@ import java.util.function.Consumer;
  *
  * @author Jerome Angibaud
  */
-public class VElement<P> {
+public final class VElement<P> {
 
     public final P __;
 
