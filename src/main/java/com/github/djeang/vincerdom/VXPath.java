@@ -6,7 +6,7 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 /**
- * Utility class to create {@link javax.xml.xpath.XPathExpression} with dealing with checked Exception
+ * Utility class to create {@link javax.xml.xpath.XPathExpression} avoiding checked exceptions.
  */
 public final class VXPath {
 
