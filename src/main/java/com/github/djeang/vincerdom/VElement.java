@@ -1,10 +1,11 @@
 package com.github.djeang.vincerdom;
 
-import com.sun.org.apache.xml.internal.security.utils.ElementProxy;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
-import javax.xml.xpath.*;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
