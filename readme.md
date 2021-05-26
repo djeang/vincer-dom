@@ -1,7 +1,8 @@
 [![Build Status](https://travis-ci.org/djeang/vincer-dom.svg?branch=master)](https://travis-ci.org/djeang/vincer-dom)
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.djeang/vincer-dom.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.github.djeang%22%20AND%20a:%22vincer-dom%22) 
 
-# Last features (1.2.0)
+# Last features
+*  Predicates on `VElement#child` and `VElement#children` methods
 * `VElement#child` and `VElement#children` methods to retrieve direct children.
 * `VElement#xPath` to retrieve elements based on xPath expressions.
 
@@ -58,71 +59,33 @@ public class EditTest {
 The complete Dom manipulation has been expressed in a single chained statement, reflecting the tree structure 
 of the manipulated data.
 
-If we want to achieve exactly the same using *JDom* (a library embracing *method chaining* though), the best we can do is:
+Vincer-dom makes also parsing easier. By proxying non-existing element, it removes the need of null checking parent.
+
+For example, this prints all dependencies and plugins found in a pom. If `<version>` tag does not exist, the `text()`
+method will return `null` instead of throwing a `NullPointerException`.
 
 ```Java
-public class JdomEditTest {
+void printAllDeps() {
+    VElement root = VDocument.parse(EditTest.class.getResourceAsStream("sample-pom.xml")).root();
+    root.child("dependencies").children("dependency").forEach(this::printDependency);
+    System.out.println("---");
+    root.xPath("build/plugins/plugin").forEach(this::printDependency);
+}
 
-    @Test
-    public void editMavenPomWithJdom() {
-        InputStream stream = JdomEditTest.class.getResourceAsStream("sample-pom.xml");
-        final Document document;
-        try {
-            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            org.w3c.dom.Document w3cDocument = builder.parse(stream);
-            document = new DOMBuilder().build(w3cDocument);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        Element root = document.getRootElement();
-        Element dependencies = root.getChild("dependencies");
-        dependencies.addContent
-                (new Element("dependency")
-                    .addContent(new Element("group").setText("com.github.djeang"))
-                    .addContent(new Element("artifactId").setText("vincer-dom"))
-                    .addContent(new Element("version").setText("0.1-SNAPSHOT"))
-                );
-        dependencies.addContent
-                (new Element("dependency")
-                    .addContent(new Element("group").setText("org.junit.jupiter"))
-                    .addContent(new Element("artifactId").setText("unit-jupiter-engine"))
-                    .addContent(new Element("version").setText("5.4.0"))
-                    .addContent(new Element("scope").setText("test"))
-                );
-        removeTests(dependencies);
-        Element distributionManagement = getOrCreate(root, "distributionManagement");
-        Element repository = getOrCreate(distributionManagement, "repository");
-        getOrCreate(repository, "id").setText("My repo id");
-        getOrCreate(repository, "name").setText("My repo name");
-        getOrCreate(repository, "url").setText("http://myserver::8081");
-        final XMLOutputter xmlOutputter = new XMLOutputter();
-        try {
-            xmlOutputter.output(document, System.out);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    static Element getOrCreate(Element parent, String name) {
-        Element element = parent.getChild(name);
-        if (element == null) {
-            element = new Element(name);
-            parent.addContent(element);
-        }
-        return element;
-    }
-
-    private void removeTests(Element dependencies) {
-        for (ListIterator<Element> it = dependencies.getChildren().listIterator();it.hasNext();) {
-            Element dependency = it.next();
-            if ("test".equals(dependency.getChildText("scope"))) {
-                it.remove();
-            }
-        }
-    }
+private void printDependency(VElement el) {
+    System.out.println(String.format("%s:%s:%s", el.get("groupId").text(), el.get("artifactId").text(), el.get("version").text()));
 }
 ```
+Output :
+```
+mysql:mysql-connector-java:5.1.14
+org.slf4j:slf4j-simple:1.6.1
+---
+org.apache.maven.plugins:maven-compiler-plugin:2.3.2
+org.apache.maven.plugins:maven-jar-plugin:null
+org.apache.maven.plugins:maven-shade-plugin:1.4
+```
+
 As you can see, Vincer-Dom saves a lot of coding effort while getting code much more readable.
 
 With the use of *Parent-Chaining* pattern, the API is very thin as it consists of only 
@@ -139,13 +102,13 @@ Maven:
 <dependency>
     <groupId>com.github.djeang</groupId>
     <artifactId>vincer-dom</artifactId>
-    <version>1.0.0</version>
+    <version>1.4.0</version>
 </dependency>
 ```
 
 Jeka:
 ```Java
-.add("com.github.djeang:vincer-dom:1.0.0")
+.add("com.github.djeang:vincer-dom:1.4.0")
 ```
 
 ## How to build

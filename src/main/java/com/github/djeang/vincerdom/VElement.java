@@ -1,5 +1,6 @@
 package com.github.djeang.vincerdom;
 
+import com.sun.org.apache.xml.internal.security.utils.ElementProxy;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -8,6 +9,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 /**
  * Wrapper for {@link org.w3c.dom.Element} offering a Parent-Chaining fluent interface. <p>
@@ -97,7 +99,7 @@ public final class VElement<P> {
     /**
      * Returns the text pof the underlying element. <code>null</code> if the underlying element does not exist.
      */
-    public String getText() {
+    public String text() {
         if (!exist()) {
             return null;
         }
@@ -132,10 +134,10 @@ public final class VElement<P> {
     }
 
     /**
-     * Returns an unmodifiable list of the child elements having the specified name.
+     * Returns an unmodifiable list of the child elements having the specified name and verifying the specified predicate.
      * Returns an empty list if the underlying element does not exist.
      */
-    public List<VElement> children(String name) {
+    public List<VElement> children(String name, Predicate<VElement> predicate) {
         if (!exist()) {
             return Collections.emptyList();
         }
@@ -143,25 +145,45 @@ public final class VElement<P> {
         NodeList nodeList = w3cElement.getElementsByTagName(name);
         for (int i = 0; i < nodeList.getLength(); i++) {
             VElement el = new VElement(this, (Element) nodeList.item(i));
-            result.add(el);
+            if (predicate.test(el)) {
+                result.add(el);
+            }
         }
         return Collections.unmodifiableList(result);
     }
 
     /**
-     * Returns the child first child of this element having the specified name. Returns <code>null</null>
-     * if the underlying element does not exist or no such named child exists.
+     * Returns an unmodifiable list of the child elements having the specified name.
+     * Returns an empty list if the underlying element does not exist.
      */
-    public VElement child(String name) {
+    public List<VElement> children(String name) {
+        return children(name, el -> true);
+    }
+
+    /**
+     * Returns the child first child of this element having the specified name and verifying the specified predicate.
+     * Returns <code>null</null> if the underlying element does not exist or no such named child exists.
+     */
+    public VElement child(String name, Predicate<VElement> predicate) {
         if (!exist()) {
             return null;
         }
-        List<VElement<VElement<P>>> result = new LinkedList<>();
         NodeList nodeList = w3cElement.getElementsByTagName(name);
-        if (nodeList.getLength() == 0) {
-            return null;
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            VElement el = new VElement(this, (Element) nodeList.item(i));
+            if (predicate.test(el)) {
+                return  el;
+            }
         }
-        return new VElement(this, (Element) nodeList.item(0));
+        return null;
+    }
+
+    /**
+     * Returns the child first child of this element having the specified name.
+     * Returns <code>null</null> if the underlying element does not exist or no such named child exists.
+     */
+    public VElement child(String name) {
+        return child(name, vElement -> true);
     }
 
     /**

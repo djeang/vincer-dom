@@ -43,7 +43,7 @@ public class EditTest {
         List<VElement> dependencyEls = doc.root().get("dependencies").children("dependency");
         assertTrue(dependencyEls.size() > 3);
         VElement secondArtifactEl = dependencyEls.get(1).child("artifactId");
-        assertEquals("hibernate-core", secondArtifactEl.getText());
+        assertEquals("hibernate-core", secondArtifactEl.text());
     }
 
     @Test
@@ -53,14 +53,14 @@ public class EditTest {
         XPathExpression xPathExpression = VXPath.compile("dependency/artifactId");
         List<VElement> dependencyEls = doc.root().get("dependencies").xPath(xPathExpression);
         assertTrue(dependencyEls.size() > 3);
-        assertEquals("hibernate-core", dependencyEls.get(1).getText());
+        assertEquals("hibernate-core", dependencyEls.get(1).text());
     }
 
 
 
     private void removeTests(VElement<?> dependencies) {
         dependencies.children("dependency").stream()
-            .filter(dependency -> "test".equals(dependency.get("scope").getText()))
+            .filter(dependency -> "test".equals(dependency.get("scope").text()))
             .forEach(VElement::remove);
     }
 }
