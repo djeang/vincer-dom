@@ -69,7 +69,7 @@ void printAllDeps() {
     VElement root = VDocument.parse(EditTest.class.getResourceAsStream("sample-pom.xml")).root();
     root
         .child("dependencies")
-            .children("dependency").forEach(this::printDependency);µ
+            .children("dependency").forEach(this::printDependency);
             
     System.out.println("---");
     root.xPath("build/plugins/plugin").forEach(this::printDependency);
