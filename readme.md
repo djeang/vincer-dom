@@ -67,13 +67,19 @@ method will return `null` instead of throwing a `NullPointerException`.
 ```Java
 void printAllDeps() {
     VElement root = VDocument.parse(EditTest.class.getResourceAsStream("sample-pom.xml")).root();
-    root.child("dependencies").children("dependency").forEach(this::printDependency);
+    root
+        .child("dependencies")
+            .children("dependency").forEach(this::printDependency);
     System.out.println("---");
-    root.xPath("build/plugins/plugin").forEach(this::printDependency);
+    root.xPath("build/plugins/plugin")
+        .forEach(this::printDependency);
 }
 
 private void printDependency(VElement el) {
-    System.out.println(String.format("%s:%s:%s", el.get("groupId").text(), el.get("artifactId").text(), el.get("version").text()));
+    System.out.println(String.format("%s:%s:%s", 
+        el.get("groupId").text(), 
+        el.get("artifactId").text(), 
+        el.get("version").text()));
 }
 ```
 Output :
