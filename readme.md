@@ -71,8 +71,7 @@ void printAllDeps() {
         .child("dependencies")
             .children("dependency").forEach(this::printDependency);
     System.out.println("---");
-    root.xPath("build/plugins/plugin")
-        .forEach(this::printDependency);
+    root.xPath("build/plugins/plugin").forEach(this::printDependency);
 }
 
 private void printDependency(VElement el) {
