@@ -1,63 +1,44 @@
-import dev.jeka.core.api.depmanagement.JkDependencySet;
+import dev.jeka.core.api.crypto.gpg.JkGpg;
 import dev.jeka.core.api.depmanagement.JkRepoSet;
-import dev.jeka.core.api.java.JkJavaVersion;
-import dev.jeka.core.api.tooling.JkGitWrapper;
-import dev.jeka.core.tool.JkCommandSet;
-import dev.jeka.core.tool.JkEnv;
-import dev.jeka.core.tool.JkInit;
-import dev.jeka.core.tool.builtins.java.JkPluginJava;
-import dev.jeka.core.tool.builtins.repos.JkPluginPgp;
-
-import static dev.jeka.core.api.depmanagement.JkScope.TEST;
+import dev.jeka.core.api.project.JkProject;
+import dev.jeka.core.api.tooling.JkGitProcess;
+import dev.jeka.core.tool.JkBean;
+import dev.jeka.core.tool.JkInjectProperty;
+import dev.jeka.core.tool.builtins.project.ProjectJkBean;
 
 //@formatter:off
-class Build extends JkCommandSet {
+class Build extends JkBean {
 
-    JkPluginJava java = getPlugin(JkPluginJava.class);
+    ProjectJkBean project = getBean(ProjectJkBean.class).configure(this::configure);
 
-    @JkEnv("OSSRH_USER")
+    @JkInjectProperty("OSSRH_USER")
     public String ossrhUser;  // OSSRH user and password will be injected from environment variables
 
-    @JkEnv("OSSRH_PWD")
+    @JkInjectProperty("OSSRH_PWD")
     public String ossrhPwd;
 
-    @Override
-    protected void setup() {
-        getPlugin(JkPluginPgp.class);  // supply automatically a signer with the secret key located in jeka/gpg
-        java.getProject()
-            .getJarProduction()
-                .getDependencyManagement()
-                    .addDependencies(JkDependencySet.of()
-                            .and("org.jdom:jdom2:jar:2.0.6", TEST)
-                            .and("org.junit.jupiter:junit-jupiter:5.6.2", TEST)).__
-                .getCompilation()
-                    .setJavaVersion(JkJavaVersion.V8).__.__
-            .getPublication()
-                .setModuleId("com.github.djeang:vincer-dom")
-                .setVersionSupplier(JkGitWrapper.of(getBaseDir())::getJkVersionFromTags)
-                .setRepos(JkRepoSet.ofOssrhSnapshotAndRelease(ossrhUser, ossrhPwd))
-                .getMavenPublication()
-                    .getPomMetadata()
-                        .getProjectInfo()
-                            .setName("Vincer-Dom")
-                            .setDescription("Modern Dom manipulation library for Java")
-                            .setUrl("https://github.com/djeang/vincer-dom").__
-                        .getScm()
-                            .setUrl("https://github.com/djeang/vincer-dom.git").__
-                        .addApache2License()
-                        .addGithubDeveloper("djeang", "djeangdev@yahoo.fr");
+    private void configure(JkProject project) {
+        project.flatFacade()
+            .useSimpleLayout()
+            .configureTestDependencies(deps -> deps
+                .and("org.jdom:jdom2:2.0.6.1")
+                .and("org.junit.jupiter:junit-jupiter:5.8.1")
+            );
+        project.publication
+            .setModuleId("com.github.djeang:vincer-dom")
+            .setVersion(JkGitProcess.of(getBaseDir())::getVersionFromTag)
+            .setRepos(JkRepoSet.ofOssrhSnapshotAndRelease(ossrhUser, ossrhPwd, JkGpg.ofDefaultGnuPg().getSigner("")))
+            .maven.pomMetadata
+                .setProjectName("Vincer-Dom")
+                .setProjectDescription("Modern Dom manipulation library for Java")
+                .setProjectUrl("https://github.com/djeang/vincer-dom")
+                .setScmUrl("https://github.com/djeang/vincer-dom.git")
+                .addApache2License()
+                .addGithubDeveloper("djeang", "djeangdev@yahoo.fr");
     }
 
     public void cleanPack() {
-        clean(); java.pack();
-    }
-
-    public void publish() {
-        java.publish();
-    }
-
-    public static void main(String[] args) {
-        JkInit.instanceOf(Build.class, args).cleanPack();
+        project.clean(); project.pack();
     }
 
 }
