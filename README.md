@@ -128,11 +128,11 @@ project, execute:
 
 *Note that you don't need to install Jeka on your machine.*
 
-To build locally:
+### How to build
 
-`./jekaw cleanPack` will compile, test and package the library in jar file.
-
-You can also launch the `jeka/def/Build#main` method directly from your IDE.
+```shell
+./jekaw cleanPack
+```
 
 ## How to release
 

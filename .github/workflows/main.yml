@@ -1,0 +1,24 @@
+# A push on master will build, test and publish Jeka on OSSRH.
+# Beside it will push the built documentation on the Jeka landing page.
+
+# If a tag is present on the last commit, Jeka will publish versioned artifacts according tag name on OSSRH public repo.
+# If no tag is present, the built artifacts will be published to OSSRH snapshot repository.
+# This logic is implemented within the Jeka build.
+
+name: Java Build and Publish
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: git fetch --prune --unshallow --tags
+    - name: Build and publish
+      env:
+        jeka.repos.publish.username: ${{ secrets.OSSRH_USER }}
+        jeka.repos.publish.password: ${{ secrets.OSSRH_PWD }}
+        jeka.gpg.secret-key: ${{ secrets.GPG_SECRET_KEY}}
+        jeka.gpg.passphrase: ${{ secrets.GPG_PASSPHRASE }}
+      run: "./jeka project: pack maven: publish"
