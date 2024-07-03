@@ -140,7 +140,9 @@ Just create a new release on project github page.
 
 ## Deploying on Maven Central
 
-The publication is done via a github action defining the required environment variables :
+The configuration lies in [jeka.properties file](jeka.properties).
+
+The publication is done via a [github action](.github/workflows/main.yml) defining the required environment variables :
 
 ```yaml
 env:
