@@ -137,6 +137,21 @@ project, execute:
 ## How to release
 
 Just create a new release on project github page.
+
+## Deploying on Maven Central
+
+The publication is done via a github action defining the required environment variables :
+
+```yaml
+env:
+    jeka.repos.publish.username: ${{ secrets.OSSRH_USER }}
+    jeka.repos.publish.password: ${{ secrets.OSSRH_PWD }}
+    jeka.gpg.secret-key: ${{ secrets.GPG_SECRET_KEY}}
+    jeka.gpg.passphrase: ${{ secrets.GPG_PASSPHRASE }}
+```
+The content of `secrets.GPG_SECRET_KEY` has been obtained by executing : `gpg --export-secret-key --armor my-key-name`.
+
+Just execute `jeka maven: publish` to publish on Maven Central.
   
 ## Roadmap
 * Add namespace support
