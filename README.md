@@ -131,17 +131,12 @@ project, execute:
 ### How to build
 
 ```shell
-./jekaw cleanPack
+./jeka project: pack
 ```
 
 ## How to release
 
-Releasing just consists in putting a Git tag. If a tag is present on the current commit, the build 
-signs and pushes artifacts to OSSRH public release repo. Artifacts are simply pushed to OSSRH 
-Snapshot repo otherwise.
-
-You can directly put a tag on the remote branch with `./jekaw git#tagRemote`. This will list the existing tags,
-so you can choose the next one accordingly.
+Just create a new release on project github page.
   
 ## Roadmap
 * Add namespace support
