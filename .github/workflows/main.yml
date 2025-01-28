@@ -21,4 +21,4 @@ jobs:
         jeka.repos.publish.password: ${{ secrets.OSSRH_PWD }}
         jeka.gpg.secret-key: ${{ secrets.GPG_SECRET_KEY}}
         jeka.gpg.passphrase: ${{ secrets.GPG_PASSPHRASE }}
-      run: "./jeka project: pack maven: publish"
+      run: "./jeka pack maven: publish"
