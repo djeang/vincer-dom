@@ -12,6 +12,9 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.util.function.Consumer;
 
 /**
@@ -81,6 +84,19 @@ public final class VDocument {
     }
 
     /**
+     * Creates a {@link VDocument} by parsing the content of the specified path.
+     */
+    public static VDocument parse(Path xmlFile) {
+        InputStream inputStream;
+        try {
+            inputStream = Files.newInputStream(xmlFile);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return VDocument.parse(inputStream);
+    }
+
+    /**
      * Returns thd underlying w3c {@link Document}.
      */
     public Document getW3cDocument() {
@@ -128,6 +144,16 @@ public final class VDocument {
         } catch (TransformerException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void save(Path outputFile, OpenOption... openOptions) {
+        OutputStream out = null;
+        try {
+            out = Files.newOutputStream(outputFile, openOptions);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        print(out);
     }
 
 }

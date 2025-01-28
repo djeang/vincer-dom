@@ -98,6 +98,18 @@ public final class VElement<P> {
     }
 
     /**
+     * Returns the tag name of the underlying element.
+     * If the element does not exist, this method returns {@code null}.
+     *
+     */
+    public String tagName() {
+        if (!exist()) {
+            return null;
+        }
+        return w3cElement.getTagName();
+    }
+
+    /**
      * Returns the text pof the underlying element. <code>null</code> if the underlying element does not exist.
      */
     public String text() {
@@ -159,6 +171,23 @@ public final class VElement<P> {
      */
     public List<VElement> children(String name) {
         return children(name, el -> true);
+    }
+
+    /**
+     * Returns an unmodifiable list of the child elements of this element.
+     * If the element does not exist, this method returns an empty list.
+     */
+    public List<VElement> children() {
+        if (!exist()) {
+            return Collections.emptyList();
+        }
+        List<VElement<VElement<P>>> result = new LinkedList<>();
+        NodeList nodeList = w3cElement.getChildNodes();
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            VElement el = new VElement(this, (Element) nodeList.item(i));
+            result.add(el);
+        }
+        return Collections.unmodifiableList(result);
     }
 
     /**
