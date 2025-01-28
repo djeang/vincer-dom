@@ -50,7 +50,7 @@ public class EditTest {
     }
 
     private void removeTests(VElement<?> dependencies) {
-        dependencies.getAll("dependency").stream()
+        dependencies.children("dependency").stream()
             .filter(dependency -> "test".equals(dependency.get("scope").getText()))
             .forEach(VElement::remove);
     }
