@@ -10,6 +10,7 @@
     <url>http://maven.apache.org</url>
     <build>
         <plugins>
+            <!-- a comment -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

@@ -1,6 +1,8 @@
 package com.github.djeang.vincerdom;
 
+import com.sun.org.apache.xml.internal.security.utils.ElementProxy;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.xml.xpath.XPathConstants;
@@ -184,8 +186,11 @@ public final class VElement<P> {
         List<VElement<VElement<P>>> result = new LinkedList<>();
         NodeList nodeList = w3cElement.getChildNodes();
         for (int i = 0; i < nodeList.getLength(); i++) {
-            VElement el = new VElement(this, (Element) nodeList.item(i));
-            result.add(el);
+            Node node = nodeList.item(i);
+            if (node instanceof Element) {
+                VElement el = new VElement(this, (Element) nodeList.item(i));
+                result.add(el);
+            }
         }
         return Collections.unmodifiableList(result);
     }
@@ -260,7 +265,8 @@ public final class VElement<P> {
      */
     public VElement<P> remove() {
         assertExist();
-        this.w3cElement.getParentNode().removeChild(w3cElement);
+        Element parent = (Element) w3cElement.getParentNode();
+        parent.removeChild(w3cElement);
         return this;
     }
 

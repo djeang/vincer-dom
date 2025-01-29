@@ -8,6 +8,10 @@ import java.util.List;
 @Disabled
 public class DocSamples {
 
+    static VDocument pomSample() {
+        return VDocument.parse(DocSamples.class.getResourceAsStream("sample-pom.xml"));
+    }
+
     @Test
     void printAllDeps() {
         VElement root = VDocument.parse(EditTest.class.getResourceAsStream("sample-pom.xml")).root();
