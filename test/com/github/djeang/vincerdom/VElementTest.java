@@ -32,5 +32,11 @@ class VElementTest {
         Assertions.assertEquals(3, pluginEls.size());
     }
 
+    @Test
+    void testGet_takeOnlyChildrenn() {
+        String groupId = DocSamples.pomSample().root().get("groupId").text();
+        Assertions.assertEquals("org.github.djeang", groupId);
+    }
+
 
 }

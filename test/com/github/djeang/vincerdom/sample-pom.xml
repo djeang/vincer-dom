@@ -1,6 +1,10 @@
 <project>
     <modelVersion>4.0.0</modelVersion>
 
+    <parent>
+        <groupId>parent-groupId</groupId>
+    </parent>
+
     <groupId>org.github.djeang</groupId>
     <artifactId>vincer-dom</artifactId>
     <version>1.0</version>
