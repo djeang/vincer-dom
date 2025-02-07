@@ -27,16 +27,25 @@ class VElementTest {
 
     @Test
     void testChildren_withComment() {
-        List<VElement> pluginEls = DocSamples.pomSample().root()
+        List<VElement<Void>> pluginEls = DocSamples.pomSample().root()
                 .get("build").get("plugins").children();
         Assertions.assertEquals(3, pluginEls.size());
     }
 
     @Test
-    void testGet_takeOnlyChildrenn() {
+    void testGet_takeOnlyChildren() {
         String groupId = DocSamples.pomSample().root().get("groupId").text();
         Assertions.assertEquals("org.github.djeang", groupId);
     }
+
+    @Test
+    void testChild() {
+        String groupId = DocSamples.pomSample().root()
+                .child("groupId").text();
+        Assertions.assertEquals("org.github.djeang", groupId);
+    }
+
+
 
 
 }

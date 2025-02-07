@@ -2,6 +2,7 @@ package com.github.djeang.vincerdom;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -10,11 +11,17 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathExpressionException;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.function.Consumer;
 
 /**
@@ -26,15 +33,18 @@ public final class VDocument {
 
     private final Document w3cDocument;
 
-    private VDocument(Document w3cDocument) {
+    private final Path fileHolder;
+
+    private VDocument(Document w3cDocument, Path fileHolder) {
         this.w3cDocument = w3cDocument;
+        this.fileHolder = fileHolder;
     }
 
     /**
      * Creates a {@link VDocument} wrapping the specified w3c document.
      */
     public static VDocument of(Document w3cDocument) {
-        return new VDocument(w3cDocument);
+        return new VDocument(w3cDocument, null);
     }
 
     /**
@@ -51,7 +61,7 @@ public final class VDocument {
         Document doc = builder.newDocument();
         Element element = doc.createElement(rootName);
         doc.appendChild(element);
-        return new VDocument(doc);
+        return new VDocument(doc, null);
     }
 
     /**
@@ -67,7 +77,7 @@ public final class VDocument {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
-        return new VDocument(doc);
+        return new VDocument(doc, null);
     }
 
     /**
@@ -87,13 +97,17 @@ public final class VDocument {
      * Creates a {@link VDocument} by parsing the content of the specified path.
      */
     public static VDocument parse(Path xmlFile) {
-        InputStream inputStream;
-        try {
-            inputStream = Files.newInputStream(xmlFile);
+        final DocumentBuilder builder;
+        Document doc;
+        try (InputStream inputStream = Files.newInputStream(xmlFile)) {
+            builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            doc = builder.parse(inputStream);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
+        } catch (ParserConfigurationException | SAXException e) {
+            throw new RuntimeException(e);
         }
-        return VDocument.parse(inputStream);
+        return new VDocument(doc, xmlFile);
     }
 
     /**
@@ -110,7 +124,6 @@ public final class VDocument {
         Element root = w3cDocument.getDocumentElement();
         return VElement.of(this, root);
     }
-
 
 
     /**
@@ -146,6 +159,14 @@ public final class VDocument {
         }
     }
 
+    /**
+     * Saves the current document to the specified output file.
+     *
+     * @param outputFile the path to the file where the document will be saved.
+     * @param openOptions options specifying how the file is opened or created. These are the same options
+     *                    supported by {@link Files#newOutputStream}.
+     * @throws UncheckedIOException if an I/O error occurs while writing to the file.
+     */
     public void save(Path outputFile, OpenOption... openOptions) {
         OutputStream out = null;
         try {
@@ -154,6 +175,47 @@ public final class VDocument {
             throw new UncheckedIOException(e);
         }
         print(out);
+    }
+
+    /**
+     * Saves the current document to the file it was initially loaded from.
+     *
+     * @param openOptions options specifying how the file is opened or created.
+     *                    These are the same options supported by {@link Files#newOutputStream}.
+     * @throws IllegalStateException if the document has not been created from an existing file.
+     */
+    public void save(OpenOption... openOptions) {
+        if (fileHolder == null) {
+            throw new IllegalStateException("This document has not been created from an existing file. " +
+                    "Use `#save(Path)` method instead.");
+        }
+        save(fileHolder, openOptions);
+    }
+
+    /**
+     * Returns an unmodifiable list of elements matching the specified xPath expression.
+     */
+    public List<VElement<Void>> xPath(XPathExpression xPathExpression) {
+        List<VElement<Void>> result = new LinkedList<>();
+        final NodeList nodeList;
+        try {
+            nodeList = (NodeList) xPathExpression.evaluate(this.w3cDocument, XPathConstants.NODESET);
+        } catch (XPathExpressionException e) {
+            throw new IllegalStateException("Error when evaluating xPath expression " + xPathExpression, e);
+        }
+        for (int i = 0; i < nodeList.getLength(); i++) {
+            VElement<Void> el = new VElement(this, (Element) nodeList.item(i));
+            result.add(el);
+        }
+        return Collections.unmodifiableList(result);
+    }
+
+    /**
+     * Returns an unmodifiable list of elements matching the specified xPath expression.
+     */
+    public List<VElement<Void>> xPath(String xPathExpression) {
+        XPathExpression compiledExpression = VXPath.compile(xPathExpression);
+        return xPath(compiledExpression);
     }
 
 }

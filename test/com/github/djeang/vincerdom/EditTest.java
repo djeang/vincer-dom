@@ -40,9 +40,9 @@ public class EditTest {
     void children() {
         InputStream is = EditTest.class.getResourceAsStream("sample-pom.xml");
         VDocument doc = VDocument.parse(is);
-        List<VElement> dependencyEls = doc.root().get("dependencies").children("dependency");
+        List<VElement<Void>> dependencyEls = doc.root().get("dependencies").children("dependency");
         assertTrue(dependencyEls.size() > 3);
-        VElement secondArtifactEl = dependencyEls.get(1).child("artifactId");
+        VElement<Void> secondArtifactEl = dependencyEls.get(1).child("artifactId");
         assertEquals("hibernate-core", secondArtifactEl.text());
     }
 
@@ -50,8 +50,8 @@ public class EditTest {
     void xPath() {
         InputStream is = EditTest.class.getResourceAsStream("sample-pom.xml");
         VDocument doc = VDocument.parse(is);
-        XPathExpression xPathExpression = VXPath.compile("dependency/artifactId");
-        List<VElement> dependencyEls = doc.root().get("dependencies").xPath(xPathExpression);
+        XPathExpression xPathExpression = VXPath.compile("/project/dependencies/dependency/artifactId");
+        List<VElement<Void>> dependencyEls = doc.xPath(xPathExpression);
         assertTrue(dependencyEls.size() > 3);
         assertEquals("hibernate-core", dependencyEls.get(1).text());
     }

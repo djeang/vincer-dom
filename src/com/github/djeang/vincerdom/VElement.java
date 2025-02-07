@@ -30,7 +30,7 @@ public final class VElement<P> {
 
     private ElementProxy proxyElement;  // only used for non-existing element, so we can create it afterward.
 
-    private VElement(P parent, Element element) {
+    VElement(P parent, Element element) {
         this.__ = parent;
         this.w3cElement = element;
     }
@@ -141,7 +141,7 @@ public final class VElement<P> {
         if (!exist()) {  // If this element does not exist, it creates the proxy on the child element
             return ElementProxy.of(this, name).create();
         }
-        VElement<VElement<P>> child = this.child(name);
+        VElement child = this.child(name);
         if (child != null) {
             return child;
         }
@@ -152,7 +152,7 @@ public final class VElement<P> {
      * Returns an unmodifiable list of the child elements having the specified name and verifying the specified predicate.
      * Returns an empty list if the underlying element does not exist.
      */
-    public List<VElement> children(String name, Predicate<VElement> predicate) {
+    public List<VElement<Void>> children(String name, Predicate<VElement<Void>> predicate) {
         return children().stream()
                 .filter(element -> name.equals(element.tagName()))
                 .filter(predicate)
@@ -163,7 +163,7 @@ public final class VElement<P> {
      * Returns an unmodifiable list of the child elements having the specified name.
      * Returns an empty list if the underlying element does not exist.
      */
-    public List<VElement> children(String name) {
+    public List<VElement<Void>> children(String name) {
         return children(name, el -> true);
     }
 
@@ -171,16 +171,16 @@ public final class VElement<P> {
      * Returns an unmodifiable list of the child elements of this element.
      * If the element does not exist, this method returns an empty list.
      */
-    public List<VElement> children() {
+    public List<VElement<Void>> children() {
         if (!exist()) {
             return Collections.emptyList();
         }
-        List<VElement<VElement<P>>> result = new LinkedList<>();
+        List<VElement<Void>> result = new LinkedList<>();
         NodeList nodeList = w3cElement.getChildNodes();
         for (int i = 0; i < nodeList.getLength(); i++) {
             Node node = nodeList.item(i);
             if (node instanceof Element) {
-                VElement el = new VElement(this, (Element) nodeList.item(i));
+                VElement<Void> el = new VElement(this, (Element) nodeList.item(i));
                 result.add(el);
             }
         }
@@ -191,7 +191,7 @@ public final class VElement<P> {
      * Returns the child first child of this element having the specified name and verifying the specified predicate.
      * Returns <code>null</null> if the underlying element does not exist or no such named child exists.
      */
-    public VElement child(String name, Predicate<VElement> predicate) {
+    public VElement<Void> child(String name, Predicate<VElement<Void>> predicate) {
         return children(name, predicate).stream().findFirst().orElse(null);
     }
 
@@ -199,13 +199,18 @@ public final class VElement<P> {
      * Returns the child first child of this element having the specified name.
      * Returns <code>null</null> if the underlying element does not exist or no such named child exists.
      */
-    public VElement child(String name) {
+    public VElement<Void> child(String name) {
         return child(name, vElement -> true);
     }
 
+
+
     /**
      * Returns an unmodifiable list of elements matching the specified xPath expression.
+     *
+     * @deprecated Use {@link VDocument#xPath(XPathExpression)} instead
      */
+    @Deprecated
     public List<VElement> xPath(XPathExpression xPathExpression) {
         List<VElement<VElement<P>>> result = new LinkedList<>();
         final NodeList nodeList;
@@ -223,7 +228,10 @@ public final class VElement<P> {
 
     /**
      * Returns an unmodifiable list of elements matching the specified xPath expression.
+     *
+     * @deprecated Use {@link VDocument#xPath(String)} instead
      */
+    @Deprecated
     public List<VElement> xPath(String xPathExpression) {
         XPathExpression compiledExpression = VXPath.compile(xPathExpression);
         return xPath(compiledExpression);
