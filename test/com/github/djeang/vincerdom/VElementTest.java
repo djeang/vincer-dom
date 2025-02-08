@@ -39,10 +39,28 @@ class VElementTest {
     }
 
     @Test
+    void testGGet_multipleSegment() {
+        String parentGroupId = DocSamples.pomSample().root().get("parent").get("groupId").text();
+        String parentGroupId2 = DocSamples.pomSample().root().get("parent/groupId").text();
+        Assertions.assertEquals(parentGroupId, parentGroupId2);
+    }
+
+    @Test
     void testChild() {
         String groupId = DocSamples.pomSample().root()
                 .child("groupId").text();
         Assertions.assertEquals("org.github.djeang", groupId);
+    }
+
+    @Test
+    void testAdd_externalElement() {
+        VElement firstPlugin = DocSamples.pomSample().root().get("build/plugins/plugin");
+
+        VDocument newPom = VDocument.of("project");
+        newPom.root().get("build/pluginManagement").add(firstPlugin);
+        Assertions.assertEquals("org.apache.maven.plugins",
+                newPom.root().get("build/pluginManagement/plugin/groupId").text());
+
     }
 
 

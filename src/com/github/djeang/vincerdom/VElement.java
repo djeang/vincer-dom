@@ -1,5 +1,6 @@
 package com.github.djeang.vincerdom;
 
+import com.sun.org.apache.xml.internal.security.utils.ElementProxy;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -134,10 +135,36 @@ public final class VElement<P> {
     }
 
     /**
+     * Adds the specified {@code VElement} as a child to the current element.
+     * If the source element comes from a different document, it is cloned and adopted into the current document
+     * before being added as a child.
+     *
+     * @param source the {@code VElement} to be added as a child to the current element
+     * @return the newly added {@code VElement} wrapped in its updated parent context
+     */
+    public VElement<VElement<P>> add(VElement<?> source) {
+        source.assertExist();
+        VElement<?> attachedSource = source;
+        if (source.w3cElement.getOwnerDocument() != this.w3cElement.getOwnerDocument()) {
+            Element cloned = (Element) source.w3cElement.cloneNode(true);
+            w3cElement.getOwnerDocument().adoptNode(cloned);
+            attachedSource = new VElement<>(this, cloned);
+        }
+        w3cElement.appendChild(attachedSource.getW3cElement());
+        return (VElement<VElement<P>>) attachedSource;
+    }
+
+    /**
      * Returns the first child element of the underlying element having the specified name. <p>
      * If no such element exist, this method returns a proxy element that let creation possible afterward.
      */
     public VElement<VElement<P>> get(String name) {
+        if (name.contains("/")) {
+            String firstSegment = name.substring(0, name.indexOf('/'));
+            String lastSegment = name.substring(name.indexOf('/') + 1);
+            VElement firstEl = get(firstSegment);
+            return firstEl.get(lastSegment);
+        }
         if (!exist()) {  // If this element does not exist, it creates the proxy on the child element
             return ElementProxy.of(this, name).create();
         }

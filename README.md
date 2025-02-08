@@ -73,6 +73,9 @@ void printAllDeps() {
             
     System.out.println("---");
     root.xPath("build/plugins/plugin").forEach(this::printDependency);
+    
+    // Get the groupId of the first declared <plugin> element
+    String groupId = root.get("build/plugins/plugin/groupId").text();
 }
 
 private void printDependency(VElement el) {
