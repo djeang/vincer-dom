@@ -18,9 +18,9 @@ public final class VXPath {
     /**
      * Compiles a string to a {@link XPathExpression}.
      */
-    public static XPathExpression compile(String expression) {
+    public static XPathExpression compile(String expression, Object ...items) {
         try {
-            return XPATH.compile(expression);
+            return XPATH.compile(String.format(expression, items));
         } catch (XPathExpressionException e) {
             throw new IllegalStateException("Error when compiling xPath expression " + expression, e);
         }

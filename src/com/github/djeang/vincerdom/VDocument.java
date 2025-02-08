@@ -213,8 +213,8 @@ public final class VDocument {
     /**
      * Returns an unmodifiable list of elements matching the specified xPath expression.
      */
-    public List<VElement<Void>> xPath(String xPathExpression) {
-        XPathExpression compiledExpression = VXPath.compile(xPathExpression);
+    public List<VElement<Void>> xPath(String xPathExpression, Object... items) {
+        XPathExpression compiledExpression = VXPath.compile(xPathExpression, items);
         return xPath(compiledExpression);
     }
 
