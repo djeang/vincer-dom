@@ -138,8 +138,12 @@ public final class VDocument {
      * This method generates the XML content as UTF-8 encoded text.
      */
     public String printAsString() {
+        return printAsString(transformerConfigurer -> {});
+    }
+
+    public String printAsString(Consumer<Transformer> transformerConfigurer) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        print(baos);
+        print(baos, transformerConfigurer);
         return new String(baos.toByteArray(), StandardCharsets.UTF_8);
     }
 
