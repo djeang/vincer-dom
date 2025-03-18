@@ -81,6 +81,14 @@ public final class VDocument {
     }
 
     /**
+     * Creates a {@link VDocument} by parsing the content of specified string.
+     */
+    public static VDocument parse(String xml) {
+        ByteArrayInputStream stream = new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8));
+        return parse(stream);
+    }
+
+    /**
      * Same as {@link #parse(InputStream, DocumentBuilder)} but using a default {@link DocumentBuilder}.
      */
     public static VDocument parse(InputStream inputStream) {
@@ -125,6 +133,15 @@ public final class VDocument {
         return VElement.of(this, root);
     }
 
+    /**
+     * Converts the current document into a string representation of its XML content.
+     * This method generates the XML content as UTF-8 encoded text.
+     */
+    public String printAsString() {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        print(baos);
+        return new String(baos.toByteArray(), StandardCharsets.UTF_8);
+    }
 
     /**
      * Outputs xml in the specified stream.
