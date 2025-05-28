@@ -1,5 +1,8 @@
+[version]
+org.junit:junit-bom:5.12.2@pom
 
-
-==== TEST ====
-org.junit.jupiter:junit-jupiter:5.8.1
+[test]
+org.junit.platform:junit-platform-launcher
+org.junit.jupiter:junit-jupiter
 org.jdom:jdom2:2.0.6.1
+
