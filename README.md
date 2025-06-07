@@ -149,14 +149,14 @@ The publication is done via a [github action](.github/workflows/main.yml) defini
 
 ```yaml
 env:
-    jeka.repos.publish.username: ${{ secrets.OSSRH_USER }}
-    jeka.repos.publish.password: ${{ secrets.OSSRH_PWD }}
-    jeka.gpg.secret-key: ${{ secrets.GPG_SECRET_KEY}}
-    jeka.gpg.passphrase: ${{ secrets.GPG_PASSPHRASE }}
+    JEKA_CENTRAL_PORTAL_USERNAME: ${{ secrets.CENTRAL_PORTAL_USERNAME }}
+    JEKA_CENTRAL_PORTAL_PASSWORD: ${{ secrets.CENTRAL_PORTAL_PASSWORD }}
+    JEKA_CENTRAL_PORTAL_SIGN_KEY: ${{ secrets.GPG_SECRET_KEY}}
+    JEKA_CENTRAL_PORTAL_SIGN_KEY_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 ```
 The content of `secrets.GPG_SECRET_KEY` has been obtained by executing : `gpg --export-secret-key --armor my-key-name`.
 
-Just execute `jeka maven: publish` to publish on Maven Central.
+Just execute `jeka centralportal: publish -cp=dev.jeka:centralportal-plugin` to publish on Maven Central.
   
 ## Roadmap
 * Add namespace support
