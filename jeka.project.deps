@@ -1,5 +1,5 @@
 [version]
-org.junit:junit-bom:5.12.2@pom
+org.junit:junit-bom:5.14.4@pom
 
 [test]
 org.junit.platform:junit-platform-launcher
