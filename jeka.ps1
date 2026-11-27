@@ -35,7 +35,7 @@ function MessageVerbose {
   param([string]$msg)
 
   if (($VerbosePreference -eq "Continue") -and ($global:QuietFlag -ne $true)) {
-    [Console]::Error.WriteLine($msg)
+    [Console]::Error.WriteLine("Verbose: " + $msg)
   }
 
 }
@@ -70,6 +70,8 @@ class BaseDirResolver {
   [string]$cacheDir
   [bool]$updateFlag
 
+  static [string[]] $Protocols = @('https://', 'ssh://', 'git://', 'git@')
+
   BaseDirResolver([string]$url, [string]$cacheDir, [bool]$updateFlag) {
     $this.url = $url
     $this.cacheDir = $cacheDir
@@ -86,7 +88,7 @@ class BaseDirResolver {
     $path = $this.cacheDir + "\git\" + $this.FolderName()
     if ([System.IO.Directory]::Exists($path)) {
       if ($this.updateFlag) {
-        Remove-Item -Path $path -Recurse -Force
+        Remove-Item -Path $path -Recurse -Force -ErrorAction SilentlyContinue
         $this.GitClone($path)
       }
     } else {
@@ -107,13 +109,7 @@ class BaseDirResolver {
   }
 
   hidden [bool] IsGitRemote() {
-    $gitUrlRegex = '(https?://*)|^(ssh://*)|^(git://*)|^(git@[^:]+:*)$'
-    $myUrl = $this.url
-    if ($myUrl -match $gitUrlRegex) {
-      return $true;
-    } else {
-      return $false;
-    }
+    return [BaseDirResolver]::IsGitRemote($this.url)
   }
 
   hidden [string] SubstringBeforeHash() {
@@ -125,14 +121,29 @@ class BaseDirResolver {
   }
 
   hidden [string] FolderName() {
-    $protocols = @('https://', 'ssh://', 'git://', 'git@')
-    $trimmedUrl = $this.url
-    foreach ($protocol in $protocols) {
-      $trimmedUrl = $trimmedUrl -replace [regex]::Escape($protocol), ''
-    }
+    $trimmedUrl = [BaseDirResolver]::ProtocolLess($this.url)
+
     # replace '/' by '_'
     $folderName = $trimmedUrl -replace '/', '_'
     return $folderName
+  }
+
+  static [string] ProtocolLess([string]$url) {
+    $trimmedUrl = $url
+    foreach ($protocol in [BaseDirResolver]::Protocols) {
+      $trimmedUrl = $trimmedUrl -replace [regex]::Escape($protocol), ''
+    }
+    return $trimmedUrl
+  }
+
+  static [bool] IsGitRemote([string]$remoteArg) {
+    $gitUrlRegex = '(https?://*)|^(ssh://*)|^(git://*)|^(git@[^:]+:*)$'
+    $myUrl = $remoteArg
+    if ($myUrl -match $gitUrlRegex) {
+      return $true;
+    } else {
+      return $false;
+    }
   }
 
 }
@@ -173,7 +184,11 @@ class CmdLineArgs {
     if ($remoteIndex -eq -1) {
       return $null
     }
-    return $this.args[$remoteIndex + 1]
+    $candidate = $this.args[$remoteIndex + 1]
+    if ($candidate -eq "-u" -or $candidate -eq "--update") {
+      $candidate = $this.args[$remoteIndex + 2]
+    }
+    return $candidate
   }
 
   [array] GetProgramArgs() {
@@ -190,26 +205,42 @@ class CmdLineArgs {
   }
 
   [bool] IsUpdateFlagPresent() {
-    $remoteArgs= @("-ru", "-ur", "-u", "--remote-update")
+    $remoteArgs= @("-ru", "-ur", "-u", "--update")
     $remoteIndex= $this.GetIndexOfFirstOf($remoteArgs)
     return ($remoteIndex -ne -1)
   }
 
   [bool] IsQuietFlagPresent() {
-    $remoteArgs= @("-q", "--quiet")
-    $remoteIndex= $this.GetIndexOfFirstOf($remoteArgs)
-    return ($remoteIndex -ne -1)
+    return $this.IsFlagBeforeProgram(@("-q", "--quiet"))
   }
 
   [bool] IsVerboseFlagPresent() {
-    $remoteArgs= @("-v", "--verbose", "--debug")
-    $remoteIndex= $this.GetIndexOfFirstOf($remoteArgs)
-    return ($remoteIndex -ne -1)
+    return $this.IsFlagBeforeProgram(@("-v", "--verbose", "--debug"))
+  }
+
+  # Arguments after '-p' belong to the program
+  [bool] IsFlagBeforeProgram([array]$flags) {
+    $flagIndex = -1
+    foreach ($flag in $flags) {
+      $index = $this.args.IndexOf($flag)
+      if (($index -ne -1) -and (($flagIndex -eq -1) -or ($index -lt $flagIndex))) {
+        $flagIndex = $index
+      }
+    }
+    if ($flagIndex -eq -1) {
+      return $false
+    }
+    $programIndex = $this.GetProgramArgIndex()
+    return ($programIndex -eq -1) -or ($flagIndex -lt $programIndex)
   }
 
   [bool] IsProgramFlagPresent() {
     $remoteIndex= $this.GetProgramArgIndex()
     return ($remoteIndex -ne -1)
+  }
+
+  [bool] IsCleanFlagPresent() {
+    return $this.IsFlagBeforeProgram(@("-c", "--clean"))
   }
 
   [array] FilterOutSysProp() {
@@ -259,15 +290,20 @@ class Props {
     if ($envValue) {
       return $envValue
     }
+    $envVarName = [Props]::ToEnvironmentVariable($propName)
+    $envValue = [Environment]::GetEnvironmentVariable($envVarName)
+    if ($envValue) {
+      return $envValue
+    }
 
     $jekaPropertyFilePath = $this.baseDir + '\jeka.properties'
-
     $value = [Props]::GetValueFromFile($jekaPropertyFilePath, $propName)
     if ('' -eq $value) {
       $parentDir = $this.baseDir + '\..'
       $parentJekaPropsFile = $parentDir + '\jeka.properties'
       if (Test-Path $parentJekaPropsFile) {
-        $value = [Props]::GetValueFromFile($parentJekaPropsFile, $propName)
+        $parentDirProps = [Props]::new($this.cmdLineArgs, $parentDir, $this.globalPropFile)
+        $value = $parentDirProps.GetValue($propName)
       } else {
         $value = [Props]::GetValueFromFile($this.globalPropFile, $propName)
       }
@@ -303,10 +339,38 @@ class Props {
     return [CmdLineArgs]::new($result)
   }
 
+  # Splits a line in words, as the JeKa engine does (JkUtilsString.parseCommandline): spaces separate words,
+  # unless they are in single or double quotes, which are removed. Nothing else is interpreted.
   static [array] ParseCommandLine([string]$cmdLine) {
-    $pattern = '(""[^""]*""|[^ ]*)'
-    $regex = New-Object Text.RegularExpressions.Regex $pattern
-    return $regex.Matches($cmdLine) | ForEach-Object { $_.Value.Trim('"') } | Where-Object { $_ -ne "" }
+    $words = New-Object System.Collections.Generic.List[string]
+    $word = New-Object System.Text.StringBuilder
+    $quote = [char]0
+    $hasWord = $false
+    foreach ($c in $cmdLine.ToCharArray()) {
+      if ($quote -ne [char]0) {
+        if ($c -eq $quote) {
+          $quote = [char]0
+        } else {
+          [void]$word.Append($c)
+        }
+      } elseif ($c -eq [char]"'" -or $c -eq [char]'"') {
+        $quote = $c
+        $hasWord = $true
+      } elseif ($c -eq [char]' ') {
+        if ($hasWord) {
+          $words.Add($word.ToString())
+          [void]$word.Clear()
+          $hasWord = $false
+        }
+      } else {
+        [void]$word.Append($c)
+        $hasWord = $true
+      }
+    }
+    if ($hasWord) {
+      $words.Add($word.ToString())
+    }
+    return $words.ToArray()
   }
 
   static [string] GetValueFromFile([string]$filePath, [string]$propertyName) {
@@ -324,21 +388,68 @@ class Props {
     return $null
   }
 
+  static [string] ToEnvironmentVariable([string]$propertyName) {
+    return $propertyName.ToUpper().Replace(".", "_").Replace("-", "_")
+  }
+
+  static addOrAppendProperty([string]$file, [string]$propName, [string]$value) {
+    $lines = Get-Content $file
+    $updated = $false
+
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+      if ($lines[$i] -match "^\s*${propName}\s*=") {
+        $parts = $lines[$i] -split '=', 2
+        $currentValue = $parts[1].Trim()
+        if (-not ($currentValue -match "(^|\s)$([regex]::Escape($value))($|\s)")) {
+          $newValue = "$currentValue $value".Trim()
+          $lines[$i] = "$propName=$newValue"
+        }
+        $updated = $true
+        break
+      }
+    }
+    if (-not $updated) {
+      $lines += "$propName=$value"
+    }
+    Set-Content -Path $file -Value $lines
+  }
+
 }
 
 class Jdks {
   [Props]$Props
   [string]$CacheDir
+  [bool]$forProg
+  [string]$cachedJavaVersion
 
   Jdks([Props]$props, [string]$cacheDir) {
     $this.Props = $props
     $this.CacheDir = $cacheDir
+    $this.forProg = $false
   }
 
   [string] GetJavaCmd() {
     $javaHome = $this.JavaHome()
     $javaExe = $this.JavaExe($javaHome)
     return $javaExe
+  }
+
+  SetForProg([bool]$forProg) {
+    $this.forProg = $forProg
+  }
+
+  [string] getDeclaredJavaVersion() {
+      if (![string]::IsNullOrEmpty($this.cachedJavaVersion)) {
+          return $this.cachedJavaVersion
+      }
+      $this.cachedJavaVersion = ($this.Props.GetValueOrDefault("jeka.java.version", "21"));
+      if ($this.cachedJavaVersion.StartsWith(".")) {
+          Exit-Error "Invalid jeka.java.version: cannot be '.'. Please, change it in jeka.properties file."
+      }
+      if ($this.cachedJavaVersion -notmatch '^[0-9]') {
+          Exit-Error "Error: jeka.java.version='$($this.cachedJavaVersion)' must start with a digit. Please check your jeka.properties file."
+      }
+      return $this.cachedJavaVersion
   }
 
   hidden Install([string]$distrib, [string]$version, [string]$targetDir) {
@@ -354,15 +465,35 @@ class Jdks {
   }
 
   hidden [string] JavaExe([string]$javaHome) {
-    return $javaHome + "\bin\java.exe"
+    $exePath = $javaHome + "\bin\java.exe"
+    if ([System.IO.File]::Exists($exePath)) {
+      return $exePath
+    }
+    return $javaHome + "\jre\bin\java.exe"
   }
 
   hidden [string] JavaHome() {
-    if ($Env:JEKA_JAVA_HOME -ne $null) {
-      return $Env:JEKA_JAVA_HOME
+    $explicitPath = ($this.Props.GetValue("jeka.jdk.home"))
+    if (![string]::IsNullOrEmpty($explicitPath)) {
+      return $explicitPath
     }
-    $version = ($this.Props.GetValueOrDefault("jeka.java.version", "21"))
+    $version = ($this.getDeclaredJavaVersion())
+    if ($this.forProg) {
+      $version = ($this.Props.GetValueOrDefault("@project.javaVersion", $version))
+    }
+
     $distib = ($this.Props.GetValueOrDefault("jeka.java.distrib", "temurin"))
+
+    # The jeka.jdk.xx=path has been explicitly specified in properties
+    $explicitPath = ($this.Props.GetValue("jeka.jdk." + $version))
+    if (![string]::IsNullOrEmpty($explicitPath)) {
+      $javaExeFile = $this.JavaExe($explicitPath)
+      if (! [System.IO.File]::Exists($javaExeFile)) {
+        Exit-Error "Path for JDK " + $version + " does not contains java exe file: " + $javaExeFile
+      }
+      return $explicitPath
+    }
+
     $cachedJdkDir =  $this.CachedJdkDir($version, $distib)
     $javaExeFile = $this.JavaExe($cachedJdkDir)
     if (! [System.IO.File]::Exists($javaExeFile)) {
@@ -370,6 +501,7 @@ class Jdks {
     }
     return $cachedJdkDir
   }
+
 
 }
 
@@ -390,7 +522,7 @@ class JekaDistrib {
     $jekaVersion = $this.props.GetValue("jeka.version")
 
     # If version not specified, use jeka jar present in running distrib
-    if ($jekaVersion -eq '') {
+    if ($jekaVersion -eq '' -or $jekaVersion -eq '.') {
       $dir = $PSScriptRoot
       $jarFile = $dir + "\dev.jeka.jeka-core.jar"
       if (! [System.IO.File]::Exists($jarFile)) {
@@ -408,9 +540,33 @@ class JekaDistrib {
       return "$distDir\bin"
     }
 
-    $distRepo = $this.props.GetValueOrDefault("jeka.distrib.repo", "https://repo.maven.apache.org/maven2")
+    $distRepo = $this.props.GetValueOrDefault("jeka.repos.download", "https://repo.maven.apache.org/maven2")
+    $distRepo = $distRepo.Split(',')[0].Trim()
+
+    # A repository specific to the JeKa distribution prevails
+    $specificDistRepo = $this.props.GetValue("jeka.distrib.repo")
+    if (![String]::IsNullOrWhiteSpace($specificDistRepo)) {
+      $distRepo = $specificDistRepo.Trim()
+    }
     $url = "$distRepo/dev/jeka/jeka-core/$jekaVersion/jeka-core-$jekaVersion-distrib.zip"
     $zipExtractor = [ZipExtractor]::new($url, $distDir)
+
+    # Manage authorization
+    $repoAuthHeader = $this.props.GetValue("jeka.repos.download.headers.Authorization")
+    if (![String]::IsNullOrWhiteSpace($repoAuthHeader)) {
+      $zipExtractor.authorisationHeader = $repoAuthHeader
+    }
+    else {
+      $repoUsername = $this.props.GetValue("jeka.repos.download.username")
+      $repoPwd = $this.props.GetValue("jeka.repos.download.password")
+      if (![string]::IsNullOrWhiteSpace($repoUsername) -or ![string]::IsNullOrWhiteSpace($repoPwd)) {
+        $credentials = $repoUsername + ":" + $repoPwd
+        $bytes = [System.Text.Encoding]::UTF8.GetBytes($credentials)
+        $encodedCredential = [Convert]::ToBase64String($bytes)
+        $zipExtractor.authorisationHeader  = "Basic " + $encodedCredential
+      }
+    }
+
     $zipExtractor.Extract()
     return "$distDir\bin"
   }
@@ -418,12 +574,12 @@ class JekaDistrib {
   [string] GetJar() {
     return $this.GetBinDir() + "\dev.jeka.jeka-core.jar"
   }
-
 }
 
 class ZipExtractor {
   [string]$url
   [string]$dir
+  [string]$authorisationHeader
 
   ZipExtractor([string]$url, [string]$dir) {
     $this.url = $url
@@ -455,19 +611,127 @@ class ZipExtractor {
   hidden [string] Download() {
     $downloadFile = [System.IO.Path]::GetTempFileName() + ".zip"
     $webClient = New-Object System.Net.WebClient
-    $webClient.DownloadFile($this.url, $downloadFile)
+    if (![String]::IsNullOrWhiteSpace($this.authorisationHeader)) {
+      $webClient.Headers.Add("Authorization", $this.authorisationHeader)
+      Write-Host "add auth heder http $($this.authorisationHeader)"
+    }
+    try {
+        $webClient.DownloadFile($this.url, $downloadFile)
+    } catch [System.Net.WebException] {
+      $webEx = $_.Exception
+      $msg = "Error while downloading : " + $this.url
+      Write-Host $msg
+      Exit-Error $webEx.Message
+    }
     $webClient.Dispose()
     return $downloadFile
   }
 }
 
+# Keep in sync with SecurityChecker.java
+class TrustedUrl {
+
+  # Returns the git url as [host]/[path], without protocol, user info and tag.
+  static [string] Normalize([string]$gitUrl) {
+    $u = ($gitUrl.Trim() -split '#', 2)[0]
+    $protocolIndex = $u.IndexOf('://')
+    if ($protocolIndex -ge 0) {
+      $u = $u.Substring($protocolIndex + 3)
+    }
+    $slashIndex = $u.IndexOf('/')
+    $authority = $u
+    $path = ''
+    if ($slashIndex -ge 0) {
+      $authority = $u.Substring(0, $slashIndex)
+      $path = $u.Substring($slashIndex)
+    }
+    $authority = $authority.Substring($authority.LastIndexOf('@') + 1)
+
+    # 'host:owner/repo' notation. The owner must be kept. A port number is part of the host.
+    $colonIndex = $authority.IndexOf(':')
+    if (($colonIndex -ge 0) -and ($authority.Substring($colonIndex + 1) -notmatch '^[0-9]+$')) {
+      $path = '/' + $authority.Substring($colonIndex + 1) + $path
+      if ($path.StartsWith('//')) {
+        $path = $path.Substring(1)
+      }
+      $authority = $authority.Substring(0, $colonIndex)
+    }
+    return $authority.ToLowerInvariant() + $path
+  }
+
+  # Matches on whole path segments
+  static [bool] IsTrustedBy([string]$gitUrl, [string]$trustedEntry) {
+    $u = [TrustedUrl]::Normalize($gitUrl).TrimEnd('/')
+    $entry = [TrustedUrl]::Normalize($trustedEntry).TrimEnd('/')
+    if ($entry -eq '') {
+      return $false
+    }
+    # Such urls can be resolved by Git to another location than the one they start with
+    if ($u.Contains('%') -or $u.Contains('\') -or $u.Contains('//') -or ($u -match '[\s\p{Cc}]')) {
+      return $false
+    }
+    if ("/$u/".Contains('/../') -or "/$u/".Contains('/./')) {
+      return $false
+    }
+    if (($u -replace '\.git$', '') -ceq ($entry -replace '\.git$', '')) {
+      return $true
+    }
+    return (-not $entry.EndsWith('.git')) -and $u.StartsWith("$entry/", [System.StringComparison]::Ordinal)
+  }
+
+  # Exits if the url is not trusted
+  static [void] Check([string]$gitUrl, [string]$globalPropFile) {
+    $isGit = [BaseDirResolver]::IsGitRemote($gitUrl)
+    if ( -not $isGit) {
+      return
+    }
+    $domain = [TrustedUrl]::Normalize($gitUrl)
+    if ([TrustedUrl]::IsTrustedBy($gitUrl, "github.com/jeka-dev/")) {
+      return
+    }
+    $propName = "jeka.app.url.trusted"
+    $trustedUrlProp = [Props]::GetValueFromFile($globalPropFile, $propName);
+    $trustedEnVar = $env:JEKA_APP_URL_TRUSTED
+    if ( -not [string]::IsNullOrEmpty($trustedEnVar)) {
+      $trustedUrlProp = $trustedEnVar
+    }
+    $trustedUrls = $trustedUrlProp.Trim() -split '\s+'
+    $found = $false
+    foreach ($prefix in $trustedUrls) {
+      if ([string]::IsNullOrWhiteSpace($prefix)) {
+        continue
+      }
+      if ([TrustedUrl]::IsTrustedBy($gitUrl, $prefix)) {
+        $found = $true
+        break
+      }
+    }
+    if ($found) {   # the url is part of the trusted domains
+      return
+    }
+    Write-Host
+    $response = Read-Host "Domain '$domain' is not trusted. Add to trusted? [N/y]"
+
+    if ($response -match '^[Yy]') {
+      [Props]::addOrAppendProperty($globalPropFile, $propName, $domain)
+    } else {
+      Write-Host "Execution aborted: '$domain' is not trusted."
+      exit 1
+    }
+  }
+}
+
 class ProgramExecutor {
   [string]$folder
-  [array]$cmdLineArgs
+  [array]$cmdLineArgs   # only args passed after -p
+  [string]$url          # to check if url is trusted
+  [string]$globalPropFile
 
-  ProgramExecutor([string]$folder, [array]$cmdLineArgs) {
+  ProgramExecutor([string]$folder, [array]$cmdLineArgs, [string]$url, [string]$globalPropFile) {
     $this.folder = $folder
     $this.cmdLineArgs = $cmdLineArgs
+    $this.url = $url
+    $this.globalPropFile = $globalPropFile
   }
 
   Exec([string]$javaCmd, [string]$progFile) {
@@ -480,7 +744,6 @@ class ProgramExecutor {
 
   [string] FindProg() {
     $dir = $this.folder
-    $exist = [System.IO.Directory]::Exists("$dir")
     if (-not (Test-Path $dir)) {
       return $null
     }
@@ -492,12 +755,34 @@ class ProgramExecutor {
   }
 
   hidden [string] findFile([string]$extension) {
-    $files = Get-ChildItem -Path $this.folder -Filter "*$extension"
+    # Sources and javadoc jars, created when publishing, are not runnable
+    $files = Get-ChildItem -Path $this.folder -Filter "*$extension" |
+        Where-Object { $_.Name -notlike "*-sources.jar" -and $_.Name -notlike "*-javadoc.jar" }
     if ($files) {
       $firstFile = $files | Select-Object -First 1
       return $firstFile.FullName
     }
     return $null
+  }
+}
+
+# A jar left by 'project: pack' may have no Main-Class
+function IsRunnableJar([string]$jarFile) {
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $zip = [System.IO.Compression.ZipFile]::OpenRead($jarFile)
+  try {
+    $entry = $zip.GetEntry("META-INF/MANIFEST.MF")
+    if ($null -eq $entry) {
+      return $false
+    }
+    $reader = New-Object System.IO.StreamReader($entry.Open())
+    try {
+      return $reader.ReadToEnd() -match '(?im)^Main-Class:'
+    } finally {
+      $reader.Dispose()
+    }
+  } finally {
+    $zip.Dispose()
   }
 }
 
@@ -519,10 +804,23 @@ function ExecJekaEngine {
   & "$javaCmd" $jekaOpts "$baseDirProp" -cp "$classpath" "dev.jeka.core.tool.Main" $cmdLineArgs
 }
 
+function ReadJvmOptions{
+  param(
+      [string]$progDir
+  )
+  $filePath = $progDir + "\run.jvmoptions"
+  if (Test-Path $FilePath -PathType Leaf) {
+    return Get-Content -Path $FilePath
+  } else {
+    return @()
+  }
+}
+
 function ExecProg {
   param(
     [string]$javaCmd,
     [string]$progFile,
+    [string]$progDir,
     [array]$cmdLineArgs
   )
 
@@ -534,8 +832,10 @@ function ExecProg {
     $cmdLineArgs = [CmdLineArgs]::new($cmdLineArgs)
     $sypPropArgs = $cmdLineArgs.FilterInSysProp()
     $sanitizedProgArgs = $cmdLineArgs.FilterOutSysProp()
+    [array]$jvmOptions = ReadJvmOptions -progDir $progDir
     Write-Verbose "Run Java program $progFile with args $argLine"
-    & "$javaCmd" -jar "$sypPropArgs" "$progFile" $sanitizedProgArgs
+
+    & "$javaCmd" $jvmOptions -jar "$sypPropArgs" "$progFile" $sanitizedProgArgs
   }
 }
 
@@ -562,7 +862,16 @@ function Main {
   $remoteArg = $cmdLineArgs.GetRemoteBaseDirArg()
   $updateArg = $cmdLineArgs.IsUpdateFlagPresent()
   $baseDirResolver = [BaseDirResolver]::new($remoteArg, $cacheDir, $updateArg)
+
+  # Must be done before cloning, and whatever is executed : jeka-src code from the repo may run even without '-p' option
+  [TrustedUrl]::Check($remoteArg, $globalPropFile)
   $baseDir = $baseDirResolver.GetPath()
+
+  # The base dir may differ from the working dir, as with '-r'
+  $jekaOutputDir = Join-Path $baseDir "jeka-output"
+  if (($cmdLineArgs.IsCleanFlagPresent()) -and (Test-Path $jekaOutputDir)) {
+    Remove-Item $jekaOutputDir -Recurse -Force -ErrorAction SilentlyContinue
+  }
   $props = [Props]::new($cmdLineArgs, $baseDir, $globalPropFile)
   $cmdLineArgs = $props.InterpolatedCmdLine()
   $joinedArgs = $cmdLineArgs.args -join " "
@@ -579,10 +888,16 @@ function Main {
   if ($cmdLineArgs.IsProgramFlagPresent()) {
     $progArgs = $cmdLineArgs.GetProgramArgs()  # arguments metionned after '-p'
     $progDir = $baseDir + "\jeka-output"
-    $prog = [ProgramExecutor]::new($progDir, $progArgs)
+    $prog = [ProgramExecutor]::new($progDir, $progArgs, $remoteArg, $globalPropFile)
     $progFile = $prog.FindProg()
+    $progJdk = [Jdks]::new($props, $cacheDir)
+    $progJdk.SetForProg($true)
+    $progJavaCmd = $progJdk.GetJavaCmd()
     if ($progFile -ne '') {
-      ExecProg -javaCmd $javaCmd -progFile $progFile -cmdLineArgs $progArgs
+      if ($progFile.EndsWith(".jar") -and -not (IsRunnableJar $progFile)) {
+        Exit-Error "$progFile has no Main-Class, so it cannot be run with -p. Use 'jeka -c -p ...' to rebuild it as a runnable jar."
+      }
+      ExecProg -javaCmd $progJavaCmd -progFile $progFile -progDir $progDir -cmdLineArgs $progArgs
       exit $LASTEXITCODE
     }
 
@@ -592,9 +907,9 @@ function Main {
     if (!$buildCmd) {
       $srcDir = $baseDir + "\src"
       if ([System.IO.Directory]::Exists($srcDir)) {
-        $buildCmd = "project: pack -Djeka.skip.tests=true --stderr"
+        $buildCmd = "project: pack pack.jarType=FAT pack.detectMainClass=true -Djeka.test.skip=true --stderr"
       } else {
-        $buildCmd = "base: pack -Djeka.skip.tests=true --stderr"
+        $buildCmd = "base: pack -Djeka.test.skip=true --stderr"
       }
     }
     $buildArgs = [Props]::ParseCommandLine($buildCmd)
@@ -609,11 +924,23 @@ function Main {
     if ($progFile -eq '') {
       Exit-Error "No program found to be executed in $progDir"
     }
-    ExecProg -javaCmd $javaCmd -progFile $progFile -cmdLineArgs $progArgs
+    ExecProg -javaCmd $progJavaCmd -progFile $progFile -progDir $progDir -cmdLineArgs $progArgs
     exit $LASTEXITCODE
 
   # Execute Jeke engine
   } else {
+
+      ## Check java version > 21
+      $theJavaVersion = ($jdks.getDeclaredJavaVersion())
+      if (-not [string]::IsNullOrEmpty($theJavaVersion)) {
+          try {
+              $ver = [int]($theJavaVersion.Split('.')[0].Split('-')[0])
+              if ($ver -lt 21) {
+                  Write-Warning "jeka.java.version is set to $theJavaVersion but 21 or greater is required since JeKa 0.11.56."
+              }
+          } catch { }
+      }
+
     ExecJekaEngine -javaCmd $javaCmd -baseDir $baseDir -cacheDir $cacheDir -props $props -cmdLineArgs $cmdLineArgs.args
     exit $LASTEXITCODE
   }

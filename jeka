@@ -57,6 +57,7 @@ CURRENT_SCRIPT_DIR="$( cd "$(dirname "$0")" ; pwd -P )"
 
 # Global variables are preferred over passing all arguments
 # in method call, cause they are too many.
+declare MAVEN_CENTRAL="https://repo.maven.apache.org/maven2"
 declare DEFAULT_JAVA_VERSION="21"
 declare JDK_DOWNLOAD_DISTRIB="temurin"
 declare JDK_DOWNLOAD_LIBC_TYPE="glibc"  # default for linux, overridden for other os
@@ -67,9 +68,12 @@ declare JDK_DOWNLOAD_ARCH
 declare IS_VERBOSE # we should not log anything when on the green path, except if '-lsu' arg is present
 declare IS_QUIET # we should log only error msg
 
+declare CLEAN_JEKA_OUTPUT # We should delete the jeka-output dir
 declare LOG_DEBUG # DEBUG
 declare DRY_RUN  # Debugging purpose
 declare DEFAULT_BASE_DIR="."
+
+declare REMOTE_URL # Fill only if we run or execute a remote url (git url)
 
 
 #######################################
@@ -168,17 +172,19 @@ download_and_unpack() {
   local url=$1
   local dir=$2
   local file_type=$3  # 'zip' or 'tar.gz'
+  local auth_header=$4
   local temp_file
   temp_file=$(mktemp)
   rm "$temp_file"
 
   ## download
+  debug "download $url"
   if [ -x "$(command -v curl)" ]; then
     local silent_flag="s"
     if [ "$IS_VERBOSE" != "" ]; then
       silent_flag=""
     fi
-    curl -"$silent_flag"Lf --fail --show-error -o "$temp_file" "$url"
+    curl ${auth_header:+ -H "Authorization: $auth_header"} -"$silent_flag"Lf --fail --show-error -o "$temp_file" "$url"
     if [ $? -ne 0 ]; then
         msg "Curl request failed $url"
         msg "Returned code: $?"
@@ -209,13 +215,19 @@ download_and_unpack() {
 # Arguments:
 #   None
 #######################################
-compute_VERBOSE_QUIET() {
+compute_VERBOSE_QUIET_CLEAN() {
   for arg in "${CMD_LINE_ARGS[@]}"
     do
+      # Arguments after '-p' belong to the program
+      if [ "$arg" == "-p" ] || [ "$arg" == "--program" ]; then
+          break
+      fi
       if [ "$arg" == "--verbose" ] || [ "$arg" == "-v" ] || [ "$arg" == "-d" ] || [ "$arg" == "--debug" ]; then
           IS_VERBOSE="true"
       elif [ "$arg" == "--quiet" ] || [ "$arg" == "-q" ]; then
           IS_QUIET="true"
+      elif [ "$arg" == "--clean" ] || [ "$arg" == "-c" ]; then
+          CLEAN_JEKA_OUTPUT="true"
       fi
     done
 }
@@ -229,7 +241,7 @@ compute_VERBOSE_QUIET() {
 #######################################
 debug() {
   if [ -n "$LOG_DEBUG" ] || [ -n "$IS_VERBOSE" ]; then
-    echo "$*" 1>&2
+    echo "DEBUG: $*" 1>&2
   fi
 }
 
@@ -294,8 +306,6 @@ get_cache_dir() {
 get_git_cache_dir() {
   echo "$(get_cache_dir)/git"
 }
-
-
 
 #######################################
 # Gets the value of a property declared within a property file
@@ -390,16 +400,62 @@ get_prop_value_from_base_dir() {
 #   JEKA_VERSION_PROP_NAME (read)
 # Arguments:
 #   $1 : the base directory from where looking for jeka.properties file
+#   $2 : the name of the property (jeka.java.version)
 # Outputs:
 #   Write JAVA version to stdout
 #######################################
 get_java_version_from_props() {
   local base_dir="$1"
+  local prop_name=${2:-"$JEKA_VERSION_PROP_NAME"}
   local version
-  version=$(get_prop_value_from_base_dir "$base_dir" "$JEKA_VERSION_PROP_NAME")
+  version=$(get_prop_value_from_base_dir "$base_dir" "$prop_name")
   local trimmed_version
   trimmed_version="${version// /}"  # remove spaces
   echo "$trimmed_version"
+}
+
+#######################################
+# Splits a line in words, as the JeKa engine does (JkUtilsString.parseCommandline): spaces separate words,
+# unless they are in single or double quotes, which are removed. Nothing else is interpreted.
+# Globals:
+#   SPLIT_WORDS (write)
+# Arguments:
+#   $1 : the line to split
+#######################################
+split_words() {
+  SPLIT_WORDS=()
+  local line="$1"
+  local word=""
+  local quote=""
+  local has_word="false"
+  local char
+  local i
+  for (( i=0; i<${#line}; i++ )); do
+    char="${line:i:1}"
+    if [ -n "$quote" ]; then
+      if [ "$char" == "$quote" ]; then
+        quote=""
+      else
+        word+="$char"
+      fi
+    elif [ "$char" == "'" ] || [ "$char" == '"' ]; then
+      quote="$char"
+      has_word="true"
+    elif [ "$char" == " " ]; then
+      if [ "$has_word" == "true" ]; then
+        SPLIT_WORDS+=("$word")
+        word=""
+        has_word="false"
+      fi
+    else
+      word+="$char"
+      has_word="true"
+    fi
+  done
+  if [ "$has_word" == "true" ]; then
+    SPLIT_WORDS+=("$word")
+  fi
+  return 0
 }
 
 #######################################
@@ -422,9 +478,10 @@ compute_INTERPOLATED_ARGS() {
       if [ "$value" != "" ]; then
 
         # Value may content 0 or many elements
-        # shellcheck disable=SC2206
-        local substitute=($value)
-        INTERPOLATED_ARGS+=("${substitute[@]}")
+        split_words "$value"
+        if [ ${#SPLIT_WORDS[@]} -gt 0 ]; then
+          INTERPOLATED_ARGS+=("${SPLIT_WORDS[@]}")
+        fi
       else
         INTERPOLATED_ARGS+=("$arg")
       fi
@@ -465,6 +522,10 @@ find_remote_arg_index() {
 #######################################
 is_remote_arg() {
   local arg="$1"
+   if [[ "$arg" == "--remote" ]]; then
+      result="true"
+      return 0
+  fi
   if [[ "$arg" != -* ]]; then
     result="false"
     return 0
@@ -478,6 +539,141 @@ is_remote_arg() {
     result="false"
   fi
 }
+
+#######################################
+# Returns the git url as [host]/[path], without protocol, user info and tag.
+# Keep in sync with SecurityChecker.java
+#######################################
+normalize_git_url() {
+  local url="$1"
+  url="${url%%#*}"
+  if [[ "$url" == *"://"* ]]; then
+    url="${url#*://}"
+  fi
+  local authority="${url%%/*}"
+  local path=""
+  if [[ "$url" == */* ]]; then
+    path="/${url#*/}"
+  fi
+  authority="${authority##*@}"
+  # 'host:owner/repo' notation. The owner must be kept. A port number is part of the host.
+  if [[ "$authority" == *:* ]]; then
+    local after_colon="${authority#*:}"
+    if [[ ! "$after_colon" =~ ^[0-9]+$ ]]; then
+      path="/$after_colon$path"
+      if [[ "$path" == //* ]]; then
+        path="${path:1}"
+      fi
+      authority="${authority%%:*}"
+    fi
+  fi
+  authority=$(printf '%s' "$authority" | tr '[:upper:]' '[:lower:]')
+  printf '%s' "$authority$path"
+}
+
+#######################################
+# Returns 0 if the url matches the trusted entry, on whole path segments.
+# Keep in sync with SecurityChecker.java
+#######################################
+is_url_trusted_by() {
+  local url entry
+  url=$(normalize_git_url "$1")
+  entry=$(normalize_git_url "$2")
+  while [[ "$entry" == */ ]]; do entry="${entry%/}"; done
+  while [[ "$url" == */ ]]; do url="${url%/}"; done
+  if [ -z "$entry" ]; then
+    return 1
+  fi
+  # Such urls can be resolved by Git to another location than the one they start with
+  if [[ "$url" == *%* || "$url" == *\\* || "$url" == *//* || "$url" =~ [[:space:][:cntrl:]] ]]; then
+    return 1
+  fi
+  if [[ "/$url/" == */../* || "/$url/" == */./* ]]; then
+    return 1
+  fi
+  if [[ "${url%.git}" == "${entry%.git}" ]]; then
+    return 0
+  fi
+  if [[ "$entry" != *.git && "$url" == "$entry"/* ]]; then
+    return 0
+  fi
+  return 1
+}
+
+#######################################
+# Check if the remote url to execute is whitelisted
+# Arguments:
+#   $1 : a string representing the url
+# Outputs:
+#   result in 'result' global args
+#######################################
+check_url_white_listed() {
+  local url
+  url=$(normalize_git_url "$1")
+  if [ -z "$url" ]; then
+   return
+  fi
+  local whitelist=${JEKA_APP_URL_TRUSTED}
+
+  if [ -z "$whitelist" ]; then
+    whitelist=$(get_prop_value_from_file "$GLOBAL_PROP_FILE" "jeka.app.url.trusted")
+  fi
+
+  IFS=' ' read -ra trusted_urls <<< "$whitelist"
+  trusted_urls+=("github.com/jeka-dev/")
+  local is_found=false
+
+  local prefix
+  for prefix in "${trusted_urls[@]}"; do
+    if is_url_trusted_by "$1" "$prefix"; then
+      is_found=true
+      break
+    fi
+  done
+
+  # Optionally, return or echo the result
+  if [ "$is_found" = true ]; then
+    return
+  fi
+
+  #Prompt user
+  local response=""
+  read -r -p "Domain '$url' is not trusted. Add to trusted? [N/y]: " response || true   # no terminal means no
+  if [[ "$response" == "y" || "$response" == "Y" ]]; then
+    add_or_append_property_to_file "$GLOBAL_PROP_FILE" "jeka.app.url.trusted" "$url"
+  else
+    echo "Execution aborted: '$url' is not trusted." >&2
+    exit 1
+  fi
+}
+
+add_or_append_property_to_file() {
+    local file="$1"   # Path to the properties file
+    local key="$2"    # Property key
+    local value="$3"  # Property value
+    local delimiter=" " # Delimiter for appending values
+
+    # Ensure the file exists
+    touch "$file"
+
+    # Check if the key exists in the file
+    if grep -q "^$key=" "$file"; then
+        # Append the value to the existing key
+        escaped_key=$(printf '%s\n' "$key" | sed 's/[.[\*^$\/&]/\\&/g')
+        escaped_value=$(printf '%s\n' "$value" | sed 's/[.[\*^$\/&]/\\&/g')
+
+        # 'sed -i' is not portable between macOS and Linux
+        local tmp_file
+        tmp_file=$(mktemp)
+        sed "s/^$escaped_key=\(.*\)/$escaped_key=\1${delimiter}${escaped_value}/" "$file" > "$tmp_file"
+        cat "$tmp_file" > "$file"   # keep permissions and links of the original file
+        rm -f "$tmp_file"
+    else
+        # Add a new key-value pair
+        echo "$key=$value" >> "$file"
+    fi
+}
+
 
 # call `get_jdk_home_from_props base_dir JAVA_VERSION`
 get_jdk_home_from_props() {
@@ -503,14 +699,20 @@ is_git_url() {
 #   The dir location
 #######################################
 get_folder_name_from_git_url() {
-    local url=$1
-    local trimmed_url=$url
-    local protocols=("https://" "ssh://" "git://" "git@")
-    for protocol in "${protocols[@]}"; do
-      trimmed_url="${trimmed_url#$protocol}"
-    done
+    local trimmed_url
+    trimmed_url=$(get_protocol_less_url "$1")
     local folder_name="${trimmed_url//\//_}"  # replace '/' by '_'
     echo "$folder_name"
+}
+
+get_protocol_less_url() {
+  local url=$1
+  local trimmed_url=$url
+  local protocols=("https://" "ssh://" "git://" "git@")
+  for protocol in "${protocols[@]}"; do
+    trimmed_url="${trimmed_url#$protocol}"
+  done
+  echo "$trimmed_url"
 }
 
 assert_dir_exits() {
@@ -554,6 +756,11 @@ compute_base_dir_from_resolved_remote_arg() {
   fi
 
   ## Remote reference a git repo
+  REMOTE_URL=$remote_path
+
+  # Must be done before cloning, and whatever is executed : jeka-src code from the repo may run even without '-p' option
+  check_url_white_listed "$REMOTE_URL"
+
   local git_url
   git_url=$(substring_before_hash "$remote_path")
   local git_tag
@@ -602,6 +809,11 @@ compute_BASE_DIR() {
   local option=${array[(($index))]}
   local next_index=$((index + 1))
   local remote_arg=${array[$next_index]}
+
+  ## in case of a "-u" arg between "-r" and remote location arg
+  if [[ "$remote_arg" == -* ]]; then
+       remote_arg=${array[$next_index+1]}
+  fi
   local need_update="false"
 
   # check if cmdline contains -u or --update options, prior the -parameters
@@ -624,7 +836,7 @@ compute_BASE_DIR() {
 
 #######################################
 # Computes the location of JeKa distribution directory according the JeKa version
-# used for the current BASE DIR. This may implies to dowload the distribution.
+# used for the current BASE DIR. This may implies to download the distribution.
 # Global Vars:
 #   JEKA_DIST_DIR (write)
 # Arguments:
@@ -645,7 +857,7 @@ compute_JEKA_DIST_DIR() {
   else
     local jeka_version=
     jeka_version=$(get_prop_value_from_base_dir "$base_dir" "jeka.version")
-    if [ -z "$jeka_version" ]; then
+    if [[ -z "$jeka_version" || "$jeka_version" == "." ]]; then
       JEKA_DIST_DIR="$CURRENT_SCRIPT_DIR"  # if no version and distrib location specified, use the current script dir
     else
       local distrib_cache_dir
@@ -659,15 +871,32 @@ compute_JEKA_DIST_DIR() {
         if [[ "$jeka_version" == *"-SNAPSHOT" ]]; then
           jeka_repo="https://oss.sonatype.org/content/repositories/snapshots"
         else
-          jeka_repo="https://repo.maven.apache.org/maven2"
+          jeka_repo=$MAVEN_CENTRAL
         fi
         local distrib_repo
-        distrib_repo=$(get_prop_value_from_base_dir "$base_dir" "jeka.distrib.repo")
+        distrib_repo=$(get_prop_value_from_base_dir "$base_dir" "jeka.repos.download")
+        [ -n "$distrib_repo" ] && distrib_repo=$(echo "$distrib_repo" | cut -d',' -f1 | xargs)
         [ -n "$distrib_repo" ] && jeka_repo=$distrib_repo
 
+        # A repository specific to the JeKa distribution prevails
+        local specific_distrib_repo
+        specific_distrib_repo=$(get_prop_value_from_base_dir "$base_dir" "jeka.distrib.repo")
+        [ -n "$specific_distrib_repo" ] && jeka_repo=$(echo "$specific_distrib_repo" | xargs)
+
         local url=$jeka_repo/dev/jeka/jeka-core/$jeka_version/jeka-core-$jeka_version-distrib.zip
+        local auth_header=""
+        auth_header=$(get_prop_value_from_base_dir "$base_dir" "jeka.repos.download.headers.Authorization")
+        if [ -z "$auth_header" ]; then
+          repo_username=$(get_prop_value_from_base_dir "$base_dir" "jeka.repos.download.username")
+          repo_password=$(get_prop_value_from_base_dir "$base_dir" "jeka.repos.download.password")
+          if [[ -n "$repo_username" && -n "$repo_password" ]]; then
+            encoded_credentials=$(echo -n "$repo_username:$repo_password" | base64)
+            auth_header="Basic $encoded_credentials"
+          fi
+        fi
+
         info "Download Jeka distrib from $url in $distrib_cache_dir"
-        download_and_unpack "$url" "$distrib_cache_dir"
+        download_and_unpack "$url" "$distrib_cache_dir" "zip" "$auth_header"
         JEKA_DIST_DIR=$distrib_cache_dir
       fi
     fi
@@ -715,8 +944,9 @@ compute_JEKA_CLASSPATH() {
     jar_file="$dist_dir/$JEKA_JAR_NAME"
   fi
   if [ ! -f "$jar_file" ]; then
-    msg "Cannot find JeKa jar file $jar_file."
-    msg "Are you sure the JeKa distribution you use is properly packaged ?"
+    msg "Cannot find Jeka jar file $jar_file"
+    msg "Are you sure the jeka.version is correctly specified in your project's jeka.properties file ?"
+    msg "Or, if you're executing Jeka from the global distribution, it might not be packaged correctly."
     exit 1
   fi
   JEKA_CLASSPATH="$boot_dir_args$jar_file"
@@ -746,18 +976,50 @@ get_or_download_jdk() {
     local download_url="https://api.foojay.io/disco/v3.0/directuris?distro=$JDK_DOWNLOAD_DISTRIB&javafx_bundled=false&libc_type=$JDK_DOWNLOAD_LIBC_TYPE&archive_type=$JDK_DOWNLOAD_FILE_TYPE&operating_system=$JDK_DOWNLOAD_OS&package_type=jdk&version=$JAVA_VERSION&architecture=$JDK_DOWNLOAD_ARCH&latest=available"
     info "Downloading JDK $JDK_DOWNLOAD_DISTRIB $JAVA_VERSION to $jdk_cache_dir. It may take a while..."
     download_and_unpack "$download_url" "$jdk_cache_dir" "$JDK_DOWNLOAD_FILE_TYPE"
-    if [ "tar.gz" == "$JDK_DOWNLOAD_FILE_TYPE" ]; then
-      pushd "$jdk_cache_dir" > /dev/null 2>&1
-      local nested_dir
-      nested_dir=$(find "." -mindepth 1 -maxdepth 1 -type d | head -n 1 | cut -c 3-)
-      popd > /dev/null 2>&1
-      temp_dir=$(mktemp -d)
-      if [ "$JDK_DOWNLOAD_OS" = "mac" ]; then
-          nested_dir+="/Contents/Home"
-      fi
-      mv "$jdk_cache_dir"/"$nested_dir"/* "$temp_dir"
-      mv "$temp_dir"/* "$jdk_cache_dir"
-    fi
+if [ "tar.gz" == "$JDK_DOWNLOAD_FILE_TYPE" ]; then
+  pushd "$jdk_cache_dir" > /dev/null 2>&1
+  
+  # Find the bin directory to handle various JDK archive structures
+  # Some distributions (e.g., Azul 8) include extra directory levels
+  local bin_dir
+  if [ "$JDK_DOWNLOAD_OS" = "mac" ]; then
+    # macOS JDKs have a special structure: jdk-dir/Contents/Home/bin
+    bin_dir=$(find "." -type d -path "*/Contents/Home/bin" | head -n 1)
+  else
+    # For other OS, find bin directory at any depth (up to 3 levels)
+    bin_dir=$(find "." -maxdepth 6 -type f -path "*/bin/javac" | head -n 1)
+    bin_dir=$(dirname "$bin_dir")
+
+  fi
+  
+  if [ -z "$bin_dir" ]; then
+    popd > /dev/null 2>&1
+    msg "Error: Could not locate bin directory in downloaded JDK"
+    exit 1
+  fi
+  
+  # Get the JDK root directory (parent of bin)
+  local jdk_root
+  jdk_root=$(dirname "$bin_dir")
+  
+  # Verify this is a valid JDK by checking for javac
+  if [ ! -f "$jdk_root/bin/javac" ]; then
+    popd > /dev/null 2>&1
+    msg "Error: Invalid JDK structure - javac not found in $jdk_root/bin"
+    exit 1
+  fi
+  
+  popd > /dev/null 2>&1
+  
+  # Move JDK contents to cache root if needed
+  if [ "$jdk_root" != "." ]; then
+    temp_dir=$(mktemp -d)
+    mv "$jdk_cache_dir"/"${jdk_root#./}"/* "$temp_dir"
+    rm -rf "$jdk_cache_dir"/*
+    mv "$temp_dir"/* "$jdk_cache_dir"
+    rm -rf "$temp_dir"
+  fi
+fi
   fi
   DOWNLOAD_JDK_DIR=$jdk_cache_dir
 }
@@ -820,8 +1082,16 @@ compute_JAVA_CMD() {
       ;;
   esac
 
-  # Determines JAVA_HOME
-  JAVA_VERSION=$(get_java_version_from_props "$BASE_DIR")
+  if [[ -z "$JAVA_VERSION" ]]; then
+      JAVA_VERSION=$(get_java_version_from_props "$BASE_DIR" )
+  fi
+
+  # Validate that JAVA_VERSION starts with a digit
+  if [[ -n "$JAVA_VERSION" ]] && [[ ! "$JAVA_VERSION" =~ ^[0-9] ]]; then
+    msg "Error: jeka.java.version='$JAVA_VERSION' must start with a digit."
+    msg "Please check your jeka.properties file."
+    exit 1
+  fi
 
   if [ -n "$JEKA_JDK_HOME" ]; then # We can enforce usage of a specific JDK by setting JEKA_JDK_HOME env var
     JAVA_HOME="$JEKA_JDK_HOME"
@@ -838,6 +1108,8 @@ compute_JAVA_CMD() {
     if [ -z "$jdkPath" ]; then
       get_or_download_jdk "$JAVA_VERSION"
       JAVA_HOME="$DOWNLOAD_JDK_DIR"
+    else
+      JAVA_HOME="$jdkPath"
     fi
   fi
 
@@ -888,7 +1160,25 @@ execute_program_if_requested() {
   from_arg_index=$((PROGRAM_OPTION_INDEX+1))
   local program_args=("${INTERPOLATED_ARGS[@]:$from_arg_index}")
   execute_and_exit_native_if_present "${program_args[@]}"
+
+  # if the project kbean declares a distinct java version, it should be run using that one
+  project_java_version=$(get_prop_value_from_base_dir "$BASE_DIR" "@project.javaVersion")
+  recompute_java_cmd="false"
+  original_java_version="$JAVA_VERSION"
+  if [[ -n "$project_java_version" && "$project_java_version" != "$JAVA_VERSION" ]]; then
+      JAVA_VERSION="$project_java_version"
+      JAVA_CMD=""
+      compute_JAVA_CMD
+      recompute_java_cmd=true
+  fi
   execute_and_exit_java_if_present "${program_args[@]}"
+
+
+  if [[ "$recompute_java_cmd" == "true" ]]; then
+    JAVA_VERSION="$original_java_version"
+    JAVA_CMD=""
+    compute_JAVA_CMD
+  fi
 
   if [[ "$RETRY_AFTER_BUILD" == "true" ]]; then
     msg "Cannot find a native or jar executable in $BASE_DIR/jeka-output"
@@ -897,6 +1187,7 @@ execute_program_if_requested() {
 
   ## If we are here, this means that no native or jar has been found -> build
   debug "Launch a build to generate executable"
+
   compute_JAVA_CMD
   compute_JEKA_DIST_DIR "$BASE_DIR"
   compute_JEKA_CLASSPATH "$JEKA_DIST_DIR"
@@ -906,14 +1197,14 @@ execute_program_if_requested() {
   build_cmd=$(get_prop_value_from_base_dir "$BASE_DIR" "jeka.program.build")
   if [[ -z "$build_cmd" ]]; then
     if [ -d "$BASE_DIR/src" ]; then
-      build_cmd="project: pack -Djeka.skip.tests=true --stderr"
+      build_cmd="project: pack pack.jarType=FAT pack.detectMainClass=true -Djeka.test.skip=true --stderr"
     else
-      build_cmd="base: pack -Djeka.skip.tests=true --stderr"
+      build_cmd="base: pack -Djeka.test.skip=true --stderr"
     fi
   fi
 
-  # shellcheck disable=SC2206
-  local -a build_args=($build_cmd)
+  split_words "$build_cmd"
+  local -a build_args=("${SPLIT_WORDS[@]}")
   # shellcheck disable=SC2145
   info "Launch build with command : ${heading_args[@]} ${build_args[@]}"
   "$JAVA_CMD" "${JEKA_OPTS[@]}" "-Djeka.current.basedir=$BASE_DIR" -cp "$JEKA_CLASSPATH" "dev.jeka.core.tool.Main" "${heading_args[@]}" "${build_args[@]}"
@@ -983,10 +1274,25 @@ execute_and_exit_native_if_present() {
 # Outputs:
 #   None. Exit anyway if program found
 #######################################
+# A jar left by 'project: pack' may have no Main-Class. Checked only when 'unzip' is available.
+check_runnable_jar() {
+  local jar_file="$1"
+  if ! command -v unzip >/dev/null 2>&1; then
+    return 0
+  fi
+  if ! unzip -p "$jar_file" META-INF/MANIFEST.MF 2>/dev/null | grep -qi '^Main-Class:'; then
+    msg "$jar_file has no Main-Class, so it cannot be run with -p. Use 'jeka -c -p ...' to rebuild it as a runnable jar."
+    exit 1
+  fi
+}
+
 execute_and_exit_java_if_present() {
   local jar_file;
   for file in "$BASE_DIR"/jeka-output/*; do
-      if [ -f "$file" ] && [[ "$file" == *".jar" ]]; then
+
+      # Sources and javadoc jars, created when publishing, are not runnable
+      if [ -f "$file" ] && [[ "$file" == *".jar" ]] && [[ "$file" != *"-sources.jar" ]] \
+          && [[ "$file" != *"-javadoc.jar" ]]; then
         jar_file="$file"
         break
       fi
@@ -995,6 +1301,7 @@ execute_and_exit_java_if_present() {
     debug "No Jar file found in $BASE_DIR/jeka-output/*"
     return 0
   fi
+  check_runnable_jar "$jar_file"
   compute_JAVA_CMD
   local -a sysProp_params
   filter_in_sysProp "$@"
@@ -1002,7 +1309,25 @@ execute_and_exit_java_if_present() {
   local -a regular_params
   filter_out_sysProp "$@"
   regular_params=("${returned[@]}")
-  exec "$JAVA_CMD" "${sysProp_params[@]}" -jar "$jar_file" "${regular_params[@]}"
+
+  # Read JVM options from file
+  local -a jvm_options
+  local -a jvm_options=()
+  local jvm_options_file="$BASE_DIR/jeka-output/run.jvmoptions"
+  if [ -f "$jvm_options_file" ]; then
+    while IFS= read -r line || [ -n "$line" ]; do
+      # Skip empty lines and comments (lines starting with #)
+      if [[ -n "$line" && ! "$line" =~ ^[[:space:]]*# ]]; then
+        # Trim whitespace
+        line=$(echo "$line" | xargs)
+        if [[ -n "$line" ]]; then
+          jvm_options+=("$line")
+        fi
+      fi
+    done < "$jvm_options_file"
+  fi
+
+  exec "$JAVA_CMD" "${jvm_options[@]}" "${sysProp_params[@]}" -jar "$jar_file" "${regular_params[@]}"
   exit $?
 }
 
@@ -1050,7 +1375,7 @@ filter_out_sysProp() {
 # Script starts here
 ##############################################################
 
-compute_VERBOSE_QUIET
+compute_VERBOSE_QUIET_CLEAN
 JEKA_USER_HOME=$(get_jeka_user_home)
 GLOBAL_PROP_FILE="$JEKA_USER_HOME/global.properties"
 
@@ -1058,9 +1383,27 @@ compute_INTERPOLATED_ARGS "${CMD_LINE_ARGS[@]}"
 compute_PROGRAM_OPTION_INDEX "${INTERPOLATED_ARGS[@]}"
 compute_BASE_DIR "${INTERPOLATED_ARGS[@]}"
 
+# The base dir may differ from the working dir, as with '-r'
+if [[ "$CLEAN_JEKA_OUTPUT" == "true" ]] && [ -d "$BASE_DIR/jeka-output" ]; then
+    rm -rf "$BASE_DIR/jeka-output"
+fi
+
 execute_program_if_requested
 
 compute_JAVA_CMD
+
+## Check java version
+if [[ -n "$JAVA_VERSION" ]]; then
+  JAVA_VERSION_MAJOR=$(echo "$JAVA_VERSION" | cut -d'.' -f1)
+
+  # Proceed only if the major version is numeric
+  if [[ "$JAVA_VERSION_MAJOR" =~ ^[0-9]+$ ]]; then
+    if [[ "$JAVA_VERSION_MAJOR" -lt 21 ]]; then
+      echo "Warning: jeka.java.version is set to $JAVA_VERSION but 21 or greater is required since JeKa 0.11.56."
+    fi
+  fi
+fi
+
 
 ## When debugging we don't want to execute Jeka
 if [ -z "$DRY_RUN" ]; then

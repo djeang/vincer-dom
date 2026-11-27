@@ -3,3 +3,5 @@
 /.idea/runConfigurations/publish.xml
 /jeka-src/key.txt
 /jeka-src/Script.java
+/jeka-output/
+/.jeka-work/

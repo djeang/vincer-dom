@@ -106,46 +106,65 @@ Tips: With IntelliJ you can adjust indentation right and left using `tab` and `s
 
 ## Adding Vincer-Dom to your build
 
-Maven: 
-```
+Vincer-Dom has no dependency and runs on Java 8 or higher.
+
+Maven:
+```xml
 <dependency>
     <groupId>com.github.djeang</groupId>
     <artifactId>vincer-dom</artifactId>
-    <version>1.4.0</version>
+    <version>1.7.1</version>
 </dependency>
 ```
 
-Jeka:
-```Java
-.add("com.github.djeang:vincer-dom:1.4.0")
+JeKa, in `jeka.project.deps`:
+```ini
+[compile]
+com.github.djeang:vincer-dom:1.7.1
 ```
 
 ## How to build
 
-Vincer-dom is build with [Jeka](https://jeka.dev).
+Vincer-Dom is built with [JeKa](https://jeka-dev.github.io/jeka/). This repository is also a JeKa example: a library,
+targeting Java 8, released on Maven Central from GitHub releases. You don't need to install JeKa: the `./jeka`
+script downloads it, with the JDKs it needs.
 
-If you don't use [Intellij Plugin for Jeka](https://plugins.jetbrains.com/plugin/13489-jeka), right after fetching this
-project, execute:
-* For Eclipse: `./jekaw eclipse#files`
-* For IntelliJ: `./jekaw intellij#iml` 
-
-*Note that you don't need to install Jeka on your machine.*
-
-### How to build
-
+Run the tests and create the jars in `jeka-output/`:
 ```shell
-./jeka project: pack
+./jeka project: test pack
 ```
+
+Publish to a local directory, to check the published artifacts and POM:
+```shell
+./jeka maven: publishLocal
+```
+
+To edit the project in your IDE, if you don't use the [IntelliJ plugin for JeKa](https://plugins.jetbrains.com/plugin/13489-jeka):
+* For IntelliJ: `./jeka intellij: iml`
+* For Eclipse: `./jeka eclipse: files`
+
+### How it works
+
+[jeka.properties](jeka.properties) holds the whole configuration:
+- `jeka.java.version` is the JDK running JeKa, while `@project.javaVersion=8` is the target of the library.
+  JeKa compiles with a JDK 8, which it downloads. Where no JDK 8 exists for the platform (e.g. macOS on Apple silicon),
+  it compiles with its own JDK and `--release 8`: the classes are Java 8 in both cases. Tests run in the JeKa JVM (`@project.test.fork=false`), as JeKa can't fork them on Java 8.
+- `@project.layout.style=SIMPLE`: sources in `src`, tests in `test`, resources mixed with sources.
+- `@project.gitVersioning.enable=true`: the version comes from the Git tag, or is a SNAPSHOT.
+- `jeka.classpath=dev.jeka:centralportal-plugin` and `@maven.pub.metadata.*`: the Maven Central publication.
+
+The test dependencies are in [jeka.project.deps](jeka.project.deps).
 
 ## How to release
 
-Just create a new release on project github page.
+Create a new release on the GitHub page of the project.
 
 ## Deploying on Maven Central
 
-The configuration lies in [jeka.properties file](jeka.properties).
+The publication is done by a [GitHub action](.github/workflows/main.yml), running `./jeka build centralportal: publish`
+on each push. It publishes only when the commit has a tag: otherwise the version is a SNAPSHOT, and the plugin skips it.
 
-The publication is done via a [github action](.github/workflows/main.yml) defining the required environment variables :
+The action defines the required environment variables:
 
 ```yaml
 env:
@@ -154,10 +173,12 @@ env:
     JEKA_CENTRAL_PORTAL_SIGN_KEY: ${{ secrets.GPG_SECRET_KEY}}
     JEKA_CENTRAL_PORTAL_SIGN_KEY_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 ```
-The content of `secrets.GPG_SECRET_KEY` has been obtained by executing : `gpg --export-secret-key --armor my-key-name`.
+The content of `secrets.GPG_SECRET_KEY` has been obtained by executing: `gpg --export-secret-key --armor my-key-name`.
 
-Just execute `jeka centralportal: publish -cp=dev.jeka:centralportal-plugin` to publish on Maven Central.
-  
+Learn more: [maven KBean](https://jeka-dev.github.io/jeka/reference/kbeans-maven/),
+[git KBean](https://jeka-dev.github.io/jeka/reference/kbeans-git/),
+[project KBean](https://jeka-dev.github.io/jeka/reference/kbeans-project/).
+
 ## Roadmap
 * Add namespace support
 
