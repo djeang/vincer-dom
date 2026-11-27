@@ -147,7 +147,8 @@ To edit the project in your IDE, if you don't use the [IntelliJ plugin for JeKa]
 
 [jeka.properties](jeka.properties) holds the whole configuration:
 - `jeka.java.version` is the JDK running JeKa, while `@project.javaVersion=8` is the target of the library.
-  JeKa compiles with a JDK 8. Tests run in the JeKa JVM (`@project.test.fork=false`), as JeKa can't fork them on Java 8.
+  JeKa compiles with a JDK 8, which it downloads. Where no JDK 8 exists for the platform (e.g. macOS on Apple silicon),
+  it compiles with its own JDK and `--release 8`: the classes are Java 8 in both cases. Tests run in the JeKa JVM (`@project.test.fork=false`), as JeKa can't fork them on Java 8.
 - `@project.layout.style=SIMPLE`: sources in `src`, tests in `test`, resources mixed with sources.
 - `@project.gitVersioning.enable=true`: the version comes from the Git tag, or is a SNAPSHOT.
 - `jeka.classpath=dev.jeka:centralportal-plugin` and `@maven.pub.metadata.*`: the Maven Central publication.
